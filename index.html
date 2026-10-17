@@ -53,6 +53,59 @@
 @media(orientation:landscape) and (max-height:570px){#verdictPanel{height:85%;min-height:145px}#vIcon{font-size:45px}#vText{font-size:48px}#operActions{padding-top:4px}.segment{margin-bottom:4px}}
 @media(prefers-reduced-motion:reduce){*{transition:none;animation:none}}
 
+
+/* Refinamiento iOS: superficies neutras y componentes con peso óptico consistente */
+:root{--bg:#090b10;--surface:#181c24;--surface2:#252b36;--line:#363e4b;--sub:#b9c1cc}
+#operScreen{background:#080a0e}
+#operHead{padding-left:22px;padding-right:16px;background:#10141b}
+#operHead b{font-size:15px;font-weight:650;letter-spacing:-.2px}
+#operHead span{font-size:14px;font-weight:650;color:#d7dce4}
+#operMenu{font-size:23px;width:44px;height:44px}
+#operStatus{background:#10141b;color:#c8d0dd;font-size:14px;letter-spacing:-.1px}
+#operVideo{background:#080a0e;isolation:isolate}
+#operVideo .viewer{position:absolute;inset:0}
+#operVideo .viewer .empty{background:#10151c}
+#operVideo .viewer .empty b{font-size:19px;font-weight:650}
+#operVideo .viewer .empty p{max-width:235px;font-size:14px;line-height:1.45;opacity:.78}
+#operActions{padding:12px 20px calc(14px + env(safe-area-inset-bottom));background:#10141b}
+.segment{background:#222832;border-radius:14px;padding:3px;margin-bottom:12px}
+.segment button{min-height:43px;color:#b9c3ce;font-size:15px}
+.segment button[aria-pressed=true]{background:#f3f4f6;color:#151b26}
+.primary{background:#0a84ff;border-radius:17px;min-height:60px;font-size:17px;font-weight:700;letter-spacing:-.2px}
+#verdictPanel{position:absolute;top:auto;bottom:0;left:0;right:0;min-height:0;height:min(32%,260px);z-index:12;pointer-events:none;padding:12px 20px}
+#verdictPanel[hidden]{display:none}
+#verdictPanel.visible{pointer-events:auto}
+#verdictPanel:not(.visible){transform:translateY(105%)}
+#vIcon{font-size:60px;line-height:1}
+#vText{font-size:clamp(48px,10vw,60px);line-height:1.08}
+#vScore{font-size:14px}
+#fixButtons:not([hidden]){display:grid}
+#fixButtons[hidden]{display:none}
+#superScreen{background:#f5f5f7;color:#161b23;--surface:#ffffff;--surface2:#ebeef2;--line:#dce1e8;--fg:#151b25;--sub:#5b6573;color-scheme:light}
+#superHead{background:#f5f5f7;border-bottom:1px solid #e2e5ea;padding-left:20px;padding-right:20px}
+#superHead b{font-size:21px;letter-spacing:-.5px}
+#exitSuper{color:#007aff}
+.superPane{padding:20px 16px}
+.superPane h2{font-size:27px;letter-spacing:-.8px;font-weight:740}
+.superPane p{font-size:14px}
+#calViewer{background:#111721;border:1px solid #dfe3e9;border-radius:18px;height:clamp(260px,42dvh,420px)}
+.calSteps span{background:#e6eaf0;color:#495361;font-size:12px}
+.calSteps span.active{background:#e5f2ff;color:#0657a4}
+#calCount{font-size:22px;letter-spacing:-.5px}
+#calCapture{margin-top:12px}
+.secondary,.button{background:#fff;color:#252c36;border:1px solid #d6dce5;min-height:50px}
+.card{background:white;border:1px solid #e1e5eb;box-shadow:none;border-radius:18px}
+#superTabs{background:#fff;border-top:1px solid #e1e5eb}
+#superTabs button{font-size:13px;color:#647081}
+#superTabs button[aria-selected=true]{background:#eef4fb;color:#0867c9}
+#pinOverlay{background:#090b10e8;z-index:100;align-items:center}
+#pinBox{background:#1d232d;border:1px solid #394453;max-width:350px;padding:25px;border-radius:22px}
+#pinBox h2{font-size:24px}
+#pinBox input{font-size:25px;height:56px;letter-spacing:10px}
+#pinBox .primary{min-height:52px}
+#operMissing{bottom:14px;background:#202936;border-radius:18px;padding:18px;z-index:11}
+@media(prefers-reduced-motion:reduce){#verdictPanel{transition:none}}
+
 </style>
 </head>
 <body>
@@ -70,7 +123,7 @@ productionCard→turnContent; cameraCard→settingsContent; exportBtn/importBtn 
 <nav id="superTabs" aria-label="Supervisor" role="tablist"><button data-pane="cal" aria-selected="true">◎ Calibrar</button><button data-pane="turn" aria-selected="false">▦ Turno</button><button data-pane="settings" aria-selected="false">⚙ Ajustes</button></nav></section>
 <div id="accessMenu" hidden><button id="accessSupervisor">Supervisor</button></div>
 <div id="pinOverlay" hidden role="dialog" aria-modal="true"><div id="pinBox"><h2 id="pinTitle">PIN supervisor</h2><p id="pinHint">Introduce cuatro dígitos</p><input id="pinInput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="PIN de cuatro dígitos"><p id="pinMessage"></p><div class="two"><button id="pinBack" class="secondary">Cancelar</button><button id="pinOK" class="primary">Continuar</button></div></div></div>
-<div id="verdictPanel" role="alert" aria-live="assertive"><div id="vIcon">✓</div><div id="vText">BUENA</div><div id="vScore"></div><div id="fixButtons" class="two" hidden><button id="fixGood" class="secondary">Era buena</button><button id="fixBad" class="secondary">Era mala</button></div></div>
+<div id="verdictPanel" hidden role="alert" aria-live="assertive"><div id="vIcon">✓</div><div id="vText">BUENA</div><div id="vScore"></div><div id="fixButtons" class="two" hidden><button id="fixGood" class="secondary">Era buena</button><button id="fixBad" class="secondary">Era mala</button></div></div>
 <div id="legacyHost"><main class="app">
 <header class="top"><div class="brand">VisionQC<small>INSPECCIÓN INDUSTRIAL</small></div><div class="topActions"><button class="iconBtn" id="soundBtn" aria-label="Activar o desactivar sonidos">♫</button><button class="iconBtn" id="themeBtn" aria-label="Cambiar tema">◐</button><button class="iconBtn" id="flipBtn" aria-label="Cambiar cámara" disabled>↻</button></div></header>
 <div class="step"><span id="stepLabel">PASO 1 / 3</span><strong id="stepText">Activar cámara</strong></div><div class="progress"><div id="stepProgress"></div></div>
@@ -364,10 +417,10 @@ new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('vi
 /* Interfaz Operario/Supervisor separada de los cálculos de visión. */
 let uiMode='manual',uiPinIntent='unlock',uiPane='cal';
 function u(id){return document.getElementById(id)}
-function hideOperatorVerdict(){u('verdictPanel').classList.remove('visible')}
+function hideOperatorVerdict(){const p=u('verdictPanel');p.classList.remove('visible','ko','uncertain');p.hidden=true}
 function presentOperatorVerdict(label,score){
  const p=u('verdictPanel');if(!label){hideOperatorVerdict();return}
- p.className='visible'+(label==='ko'?' ko':label==='uncertain'?' uncertain':'');
+ p.hidden=false;p.className='visible'+(label==='ko'?' ko':label==='uncertain'?' uncertain':'');
  u('vIcon').textContent=label==='ok'?'✓':label==='ko'?'✕':'?';
  u('vText').textContent=label==='ok'?'BUENA':label==='ko'?'DEFECTO':'REVISAR';
  u('vScore').textContent=score===null?'':Math.round(score*100)+'%';
@@ -403,21 +456,22 @@ function updateCalibrationWizard(){
  u('calCount').textContent=stage===0?'Registrar fondo':stage===1?ok+' de '+n.ok:stage===2?ko+' de '+n.ko:'Listo para producir ✓';
  u('calHelp').textContent=stage===0?'Retira las piezas.':stage===1?'Coloca una pieza buena desde distintos ángulos.':stage===2?'Coloca una pieza defectuosa.':'Puedes empezar a inspeccionar.';
  u('calFill').style.width=(stage===0?0:stage===1?10+45*ok/n.ok:stage===2?55+45*ko/n.ko:100)+'%';
- u('calCapture').textContent=!st.stream?'Activar cámara':!st.model?'Cargando IA…':stage===3?'Terminar':'Capturar';
+ u('calCapture').textContent=!st.stream?'Activar cámara':!st.model?'Cargando IA…':stage===3?'Volver al visor':'Capturar muestra';
  u('calDone').hidden=stage!==3;
 }
 async function captureCal(){if(!st.stream){await startCamera();return}if(!st.model){await modelLoad();return}const n=needs(),label=!count('bg')?'bg':count('ok')<n.ok?'ok':count('ko')<n.ko&&!patchEnabled()?'ko':null;if(!label){leaveSupervisor();return}u('calCapture').disabled=true;try{await add(label)}finally{u('calCapture').disabled=false;updateCalibrationWizard()}}
 async function undoCal(){const list=st.records.filter(r=>!r.synthetic);const last=list[list.length-1];if(!last)return;await transaction(STORE,'readwrite',o=>o.delete(last.id));st.records=st.records.filter(r=>r.id!==last.id);st.validationKey='';if(last.label==='bg')st.bgTiny=null;refresh()}
 function closeTurn(){if(!confirm('¿Cerrar turno y reiniciar contadores?'))return;const shifts=JSON.parse(localStorage.getItem('vqc_turns')||'[]');shifts.push({at:new Date().toISOString(),...loadCounts(),batch:u('batch').value});localStorage.setItem('vqc_turns',JSON.stringify(shifts));localStorage.setItem(COUNTS_KEY,JSON.stringify({n:0,ko:0}));st.count=st.koCount=0;refresh()}
 function initOperatorUI(){
+ // El veredicto debe vivir dentro del visor y empezar oculto.
+ u('operVideo').append(u('verdictPanel'));hideOperatorVerdict();
  // Mantenemos los controles de ML originales y montamos el mismo vídeo en ambas pantallas.
  u('turnPane').append(u('productionCard'),u('historyCard'));
  u('settingsContent')?.append();
  u('settingsPane').append(u('cameraCard'));
  const advanced=document.createElement('details');advanced.className='card';advanced.innerHTML='<summary>Avanzado</summary>';
  for(const id of ['autoThreshold','minSimilarity','minMargin','validation']){const el=u(id);if(el)advanced.append(el.closest('.field')||el)}
- u('settingsPane').append(advanced,u('soundBtn'),u('themeBtn'),u('flipBtn'));u('calPane').append(u('training'));u('training').hidden=true;
- u('training').hidden=true;
+ u('settingsPane').append(advanced,u('soundBtn'),u('themeBtn'),u('flipBtn'));u('settingsPane').append(u('training'));u('training').hidden=true;
  u('operMenu').onclick=()=>u('accessMenu').hidden=!u('accessMenu').hidden;
  u('accessSupervisor').onclick=requestSupervisor;
  u('goSuper').onclick=requestSupervisor;
