@@ -91,6 +91,27 @@ body[data-tab="calibration"] #trainingInstruction{padding:12px 14px;border-radiu
 .viewer .empty{z-index:1}
 .viewer canvas.overlay{z-index:2}
 .viewer .chips,.viewer .result,.viewer .hint,.viewer .viewerBadge{z-index:3}
+
+/* [MEJORA-33] Visor operativo: una sola tarea, sin información técnica redundante. */
+body[data-tab="visor"] .step,body[data-tab="visor"] .progress,
+body[data-tab="visor"] .quality,body[data-tab="visor"] #fullscreenBtn{display:none!important}
+body[data-tab="visor"] #tab-visor{padding-top:5px}
+body[data-tab="visor"] #viewer{height:clamp(390px,65dvh,680px);max-height:calc(100dvh - 235px);min-height:310px;margin:0 12px;border-radius:24px;border-width:1px}
+body[data-tab="visor"] #viewer .viewerBadge{top:14px;left:14px;font-size:11px}
+body[data-tab="visor"] #viewer .chips{top:14px;left:auto;right:14px;max-width:48%;justify-content:flex-end}
+body[data-tab="visor"] #viewer #cameraState{display:none!important}
+body[data-tab="visor"] #viewer #presenceState{font-size:10px;padding:8px 10px;text-align:right}
+body[data-tab="visor"] #viewer .hint{bottom:16px;left:16px;right:16px;font-size:12px;padding:8px 10px;max-width:none}
+body[data-tab="visor"] #viewer .result{bottom:67px;min-width:172px;padding:12px 20px;border-radius:17px}
+body[data-tab="visor"] #viewer .result b{font-size:28px}
+body[data-tab="visor"] #viewer .result small{font-size:11px}
+body[data-tab="visor"] #viewer #result:not(.good):not(.bad):not(.uncertain){background:#121a25ad;border:1px solid #ffffff40}
+body[data-tab="visor"] .actionbar{padding:9px 14px 10px;gap:9px}
+body[data-tab="visor"] .actionbar .mainAction{height:60px;font-size:16px}
+body[data-tab="visor"] .actionbar .modeAction{height:60px}
+body[data-tab="visor"] #correctionCard{margin:10px 14px}
+@media(max-height:740px){body[data-tab="visor"] #viewer{height:calc(100dvh - 243px);min-height:255px}}
+@media(orientation:landscape) and (max-height:570px){body[data-tab="visor"] #viewer{height:calc(100dvh - 135px);min-height:180px}body[data-tab="visor"] #viewer .result{bottom:12px;left:50%}body[data-tab="visor"] #viewer .hint{display:none}}
 </style>
 </head>
 <body><main class="app">
