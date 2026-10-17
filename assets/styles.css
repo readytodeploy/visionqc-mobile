@@ -202,66 +202,94 @@
 #viewer #defectMarkers .defectMarker{width:36px;height:36px;border-width:2px;font-size:18px;background:#d21c1830}
 @media(orientation:landscape) and (max-height:570px){#calViewer{height:55dvh}#verdictPanel{bottom:7px;padding:7px 12px}#verdictPanel #vIcon{font-size:22px}#verdictPanel #vText{font-size:26px}#verdictPanel #fixButtons button{min-height:44px}}
 
-/* VisionQC Web: distribución responsive para escritorio y tablet.
-   Mobile conserva la experiencia de operario existente. */
-@media (min-width: 800px){
- html,body{min-height:100%;background:#10141b}
- #operScreen{
-  width:100%;height:100dvh;min-height:620px;
-  display:grid;grid-template-columns:minmax(0,1fr) 338px;
-  grid-template-rows:76px minmax(0,1fr);
-  column-gap:0;overflow:hidden;background:#10141b
- }
- #operHead{grid-column:1/-1;grid-row:1;height:76px;padding:0 clamp(24px,3vw,48px);background:#141a23;border-bottom:1px solid #313b48}
- #operHead b{font-size:21px;max-width:55%}
- #shiftNumbers{font-size:15px;padding:10px 15px}
- #operMenu{width:48px;height:48px}
- #operVideo{grid-column:1;grid-row:2;margin:22px 0 22px clamp(20px,3vw,48px);border-radius:22px;overflow:hidden;border:1px solid #303945;min-height:0}
- #operVideo .viewer{border-radius:22px}
- #operStatus{grid-column:2;grid-row:2;align-self:start;height:auto;display:block;margin:36px 25px 0;padding:16px 18px;background:#212b37;border:1px solid #374657;border-radius:14px;color:#e4ecf7;font-size:17px;font-weight:650;text-align:left}
- #operActions{grid-column:2;grid-row:2;align-self:end;position:relative;z-index:15;border:0;background:transparent;padding:20px 25px 32px}
- .segment{padding:4px;margin-bottom:15px}
- .segment button{min-height:54px}
- #operPrimary{height:66px;font-size:18px}
- #operVideo #verdictPanel{left:24px;right:24px;bottom:24px;max-width:500px;margin:auto;padding:16px 20px}
- #operVideo #verdictPanel #vText{font-size:34px}
- #operMissing{left:24px;right:24px;bottom:24px;max-width:420px;margin:auto}
- #superScreen{min-height:100dvh;padding-bottom:0;display:grid;grid-template-columns:236px minmax(0,1fr);grid-template-rows:78px minmax(0,1fr);background:#f5f5f7}
- #superScreen[hidden]{display:none}
- #superHead{grid-column:1/-1;grid-row:1;height:78px;min-height:78px;padding:0 32px;background:#fff}
- #superHead b{font-size:24px}
- #superTabs{position:static;grid-column:1;grid-row:2;display:flex;flex-direction:column;justify-content:flex-start;gap:8px;padding:27px 12px;border:0;border-right:1px solid #e1e5eb;background:#fff}
- #superTabs button{min-height:56px;display:flex;align-items:center;justify-content:flex-start;padding:0 18px;text-align:left;border-radius:14px;font-size:16px}
- #calPane,#turnPane,#settingsPane{grid-column:2;grid-row:2;max-width:1080px;width:100%;height:calc(100dvh - 78px);min-height:0;overflow-y:auto;padding:32px clamp(28px,4vw,64px) 70px}
- #calPane[hidden],#turnPane[hidden],#settingsPane[hidden]{display:none}
- .superPane h2{font-size:30px}
- #calPane{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.8fr);column-gap:32px;align-content:start;align-items:start}
+
+/* RESPONSIVE V6 — tres presentaciones coherentes (teléfono, tableta, escritorio). */
+#operScreen[hidden],#superScreen[hidden],#calPane[hidden],#turnPane[hidden],#settingsPane[hidden],#accessMenu[hidden],#verdictPanel[hidden]{display:none}
+#operVideo,.viewer,#calViewer{min-width:0}
+#operVideo .viewer,#calViewer .viewer{inset:0}
+#verdictPanel{max-height:min(47dvh,340px);overflow-y:auto;overscroll-behavior:contain}
+#verdictPanel #fixButtons{grid-template-columns:repeat(2,minmax(0,1fr))}
+#verdictPanel #fixButtons button{min-width:0}
+#settingsContent>.card{min-width:0;overflow-wrap:anywhere}
+#settingsContent input[type=file]{max-width:100%;font-size:14px}
+#superScreen{min-width:0}
+#superTabs{z-index:30}
+@media(max-width:599px){
+ #operScreen{width:100%;height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+ #operHead{flex:none;min-height:54px;max-height:calc(54px + env(safe-area-inset-top))}
+ #operHead>div{gap:6px}
+ #shiftNumbers{font-size:12px;padding:7px 9px}
+ #operMenu{height:44px;width:44px}
+ #operStatus{flex:none;height:32px;line-height:32px;font-size:13px}
+ #operVideo{flex:1 1 auto;min-height:0;position:relative}
+ #operVideo .viewer{position:absolute;width:100%;height:100%;overflow:hidden}
+ #operActions{flex:none;padding:8px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #2e3846}
+ .segment{margin-bottom:8px}
+ .segment button{min-height:44px}
+ #operPrimary{min-height:56px;font-size:16px}
+ #operVideo #verdictPanel{bottom:10px;left:10px;right:10px;padding:10px 12px;max-height:48%;border-radius:16px}
+ #operVideo #verdictPanel #vText{font-size:clamp(23px,6.5vw,31px)}
+ #operVideo #verdictPanel #fixButtons button{min-height:50px;font-size:14px}
+ #calPane,#turnPane,#settingsPane{padding:16px 14px calc(104px + env(safe-area-inset-bottom));width:100%;max-width:100%;min-width:0}
+ #calViewer{width:100%;height:clamp(255px,42dvh,460px);margin:12px 0;border-radius:16px}
+ #calPane #calCapture{min-height:58px}
+ #superTabs{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+ #superTabs button{min-height:52px;font-size:13px}
+ #settingsContent{display:flex;flex-direction:column;gap:12px}
+ #settingsContent>.card{width:100%}
+ #turnPane .log{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:600px) and (max-width:999px){
+ #operScreen{display:grid;grid-template-columns:minmax(0,1fr) 248px;grid-template-rows:70px minmax(0,1fr);height:100dvh;min-height:0;background:#10141b}
+ #operHead{grid-column:1/-1;grid-row:1;padding:0 24px;height:70px;background:#151b24}
+ #operVideo{grid-column:1;grid-row:2;min-height:0;margin:16px 0 16px 16px;border-radius:18px;overflow:hidden}
+ #operVideo .viewer{position:absolute;inset:0;border-radius:18px}
+ #operStatus{grid-column:2;grid-row:2;align-self:start;height:auto;line-height:1.4;text-align:left;margin:16px 12px;padding:14px;background:#202938;border-radius:14px}
+ #operActions{grid-column:2;grid-row:2;align-self:end;padding:14px 12px 22px;background:transparent;border:0}
+ #operPrimary{min-height:58px;font-size:16px}
+ #operVideo #verdictPanel{max-width:460px;left:14px;right:14px;bottom:14px;margin:auto}
+ #superScreen{min-height:100dvh;padding-bottom:0;display:grid;grid-template-columns:164px minmax(0,1fr);grid-template-rows:68px minmax(0,1fr)}
+ #superHead{grid-column:1/-1;grid-row:1;height:68px;min-height:68px;padding:0 24px}
+ #superTabs{position:static;grid-column:1;grid-row:2;display:flex;flex-direction:column;gap:8px;padding:20px 8px;border-right:1px solid #e0e5ed;background:#fff}
+ #superTabs button{min-height:52px;text-align:left;padding:0 12px;border-radius:12px;font-size:14px}
+ #calPane,#turnPane,#settingsPane{grid-column:2;grid-row:2;width:100%;max-width:none;min-width:0;height:calc(100dvh - 68px);overflow-y:auto;padding:22px 22px 46px}
+ #calViewer{height:clamp(280px,42dvh,460px);width:100%}
+ #settingsContent{display:grid;grid-template-columns:1fr;gap:12px}
+ #turnPane .log{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:1000px){
+ html,body{background:#10141b}
+ #operScreen{width:100%;height:100dvh;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,340px);grid-template-rows:76px minmax(0,1fr);background:#10141b}
+ #operHead{grid-column:1/-1;grid-row:1;height:76px;padding:0 clamp(24px,3vw,48px);background:#151b24;border-bottom:1px solid #323c48}
+ #operHead b{font-size:21px}
+ #operVideo{grid-column:1;grid-row:2;min-height:0;margin:20px 0 20px clamp(20px,3vw,48px);border-radius:22px;overflow:hidden;border:1px solid #303945}
+ #operVideo .viewer{position:absolute;inset:0;border-radius:22px}
+ #operStatus{grid-column:2;grid-row:2;align-self:start;display:block;height:auto;text-align:left;margin:22px 20px 0;padding:16px;background:#212b37;border:1px solid #354354;border-radius:14px;font-size:17px}
+ #operActions{grid-column:2;grid-row:2;align-self:end;padding:20px 20px 30px;background:transparent;border:0}
+ #operPrimary{min-height:64px;font-size:18px}
+ #operVideo #verdictPanel{max-width:500px;left:22px;right:22px;bottom:22px;margin:auto}
+ #superScreen{min-height:100dvh;padding-bottom:0;display:grid;grid-template-columns:220px minmax(0,1fr);grid-template-rows:76px minmax(0,1fr);background:#f5f5f7}
+ #superHead{grid-column:1/-1;grid-row:1;height:76px;min-height:76px;padding:0 32px;background:#fff}
+ #superTabs{position:static;grid-column:1;grid-row:2;display:flex;flex-direction:column;justify-content:flex-start;gap:8px;padding:24px 12px;border-right:1px solid #e1e5eb;background:#fff}
+ #superTabs button{min-height:56px;text-align:left;padding:0 18px;border-radius:14px;font-size:16px}
+ #calPane,#turnPane,#settingsPane{grid-column:2;grid-row:2;width:100%;max-width:none;min-width:0;height:calc(100dvh - 76px);overflow-y:auto;padding:30px clamp(26px,3vw,56px) 60px}
+ #calPane{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,.8fr);column-gap:28px;align-content:start;align-items:start}
  #calPane>h2,#calPane>.calSteps{grid-column:1/-1}
- #calViewer{grid-column:1;grid-row:3/span 6;height:min(60dvh,570px);min-height:360px;margin:0;border-radius:20px}
+ #calViewer{grid-column:1;grid-row:3/span 6;height:clamp(330px,58dvh,620px);margin:0;border-radius:20px}
  #calPane>.calProgress,#calPane>#calCount,#calPane>#calHelp,#calPane>#calCapture,#calPane>#calUndo,#calPane>#calDone{grid-column:2}
  #calPane>#calCapture{margin:0}
- #calPane>#calUndo,#calPane>#calDone{margin-top:10px}
- #settingsContent{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start}
- #settingsContent>.card{margin:0;min-width:0}
- #turnPane .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #settingsContent{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+ #settingsContent>.card{margin:0}
  #turnPane .log{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
  #turnPane .item img{height:150px}
- #accessMenu{top:80px;right:28px}
 }
-@media (min-width:800px) and (max-width:1050px){
- #operScreen{grid-template-columns:minmax(0,1fr) 280px}
- #operActions{padding-left:16px;padding-right:16px}
- #operStatus{margin-left:16px;margin-right:16px}
- #superScreen{grid-template-columns:185px minmax(0,1fr)}
- #calPane{grid-template-columns:minmax(0,1fr)}
- #calPane>*,#calViewer{grid-column:1;grid-row:auto}
- #calViewer{height:min(48dvh,460px);min-height:260px}
- #settingsContent{grid-template-columns:1fr}
+@media(min-width:1000px) and (max-height:720px){
+ #calViewer{height:48dvh;min-height:245px}
 }
-@media (min-width:800px) and (max-height:690px){
- #operScreen{min-height:0}
- #calViewer{min-height:260px;height:48dvh}
+@media(orientation:landscape) and (max-width:999px) and (max-height:550px){
+ #operHead{height:46px;min-height:46px}
+ #operStatus{font-size:12px}
+ #operActions{padding-bottom:8px}
+ #operPrimary{min-height:48px}
+ #calViewer{height:55dvh;min-height:180px}
 }
-
-/* Los atributos hidden tienen prioridad sobre las layouts grid/flex. */
-#operScreen[hidden],#superScreen[hidden],#calPane[hidden],#turnPane[hidden],#settingsPane[hidden]{display:none}
