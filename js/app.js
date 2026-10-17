@@ -278,7 +278,7 @@ on('mainBtn','click',async()=>{if(!st.stream){await startCamera();return}if(!st.
 on('autoBtn','click',startAuto);on('backgroundBtn','click',()=>add('bg'));on('addOK','click',()=>add('ok'));on('addKO','click',()=>add('ko'));on('correctOK','click',()=>correct('ok'));on('correctKO','click',()=>correct('ko'));
 on('targetOK','change',()=>{localStorage.setItem('vqc_ok',limit($('targetOK').value));refresh()});on('targetKO','change',()=>{localStorage.setItem('vqc_ko',limit($('targetKO').value));refresh()});
 on('autoThreshold','change',()=>{const manual=!$('autoThreshold').checked;$('minSimilarity').disabled=$('minMargin').disabled=!manual;refresh()});on('historyFilter','change',historyUI);on('csvBtn','click',csv);on('exportBtn','click',exportData);on('importBtn','click',()=>$('fileImport').click());on('fileImport','change',e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value=''});
-on('clearBtn','click',async()=>{if(!confirm('¿Eliminar toda la calibración guardada?'))return;stopAuto();await transaction(STORE,'readwrite',o=>o.clear());st.records=[];st.bgTiny=null;st.validationKey='';st.pending=null;st.pendingAuto=null;refresh();newResult(null);toast('Calibración eliminada. El historial permanece disponible.')});
+on('clearBtn','click',async()=>{if(!confirm('¿Eliminar toda la calibración guardada?'))return;stopAuto();await transaction(STORE,'readwrite',o=>o.clear());st.records=[];st.bgTiny=null;st.validationKey='';st.pending=null;st.pendingAuto=null;refresh();newResult(null);toast('Calibración eliminada. Los contadores del turno se conservan en Supervisor → Turno. Puedes cerrarlo para reiniciarlos.')});
 on('soundBtn','click',()=>{st.silent=!st.silent;$('soundBtn').textContent=st.silent?'♫':'♪';toast(st.silent?'Sonidos desactivados.':'Sonidos activados. El audio requiere interacción con la pantalla.')});on('themeBtn','click',()=>{const light=document.documentElement.dataset.theme!=='light';document.documentElement.dataset.theme=light?'light':'dark';$('themeColor').content=light?'#f6f7fa':'#10141b'});
 on('flipBtn','click',async()=>{st.facing=st.facing==='user'?'environment':'user';stopCamera();await startCamera()});on('torchBtn','click',async()=>{st.torch=!st.torch;await constrain({torch:st.torch})});on('focusBtn','click',()=>constrain({focusMode:'manual',exposureMode:'manual'}));on('zoom','input',e=>constrain({zoom:Number(e.target.value)}));
 on('fullscreenBtn','click',()=>{const on=$('viewer').classList.toggle('full');$('fullscreenBtn').textContent=on?'Salir de pantalla completa':'Expandir visor';drawGuide()});on('fullExit','click',()=>{$('viewer').classList.remove('full');drawGuide()});on('scanSpeed','change',()=>{if(st.auto){stopAuto();startAuto()}});
@@ -318,7 +318,7 @@ function presentOperatorVerdict(label,score){
 }
 function updateOperator(){
  u('lotName').textContent=u('batch').value||'Sin lote';
- u('shiftNumbers').textContent=st.count+' · '+st.koCount+' KO';
+ u('shiftNumbers').textContent=count('ok')===0&&count('ko')===0&&count('bg')===0?'Sin calibrar':st.count+' · '+st.koCount+' KO';
  u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Confirmar calibración':st.auto?'Detener inspección':uiMode==='automatic'?'Iniciar automático':'Inspeccionar pieza';
  u('operMissing').hidden=!st.stream||ready();if(st.stream&&!ready())u('operStatus').textContent=calibrationComplete()?'Confirma el entrenamiento en Supervisor':'Calibración pendiente';
  u('modoManual').setAttribute('aria-pressed',String(uiMode==='manual'));
