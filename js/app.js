@@ -289,8 +289,9 @@ new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('vi
    try{
      const status=u('demoImportStatus');
      if(status)status.textContent='Preparando dataset de demostración…';
-     const response=await fetch('/public/datasets/exemplos.json',{cache:'force-cache'});
-     if(!response.ok)throw Error('HTTP '+response.status);
+     let response=await fetch('/datasets/exemplos.json',{cache:'force-cache'});
+     if(!response.ok)response=await fetch('/public/datasets/exemplos.json',{cache:'force-cache'});
+     if(!response.ok)throw Error('Dataset no disponible (HTTP '+response.status+')');
      const blob=await response.blob();
      await importDemoDataset(new File([blob],'exemplos.json',{type:'application/json'}));
    }catch(err){const status=u('demoImportStatus');if(status)status.textContent='Ejemplo disponible para importar manualmente: '+err.message;}
