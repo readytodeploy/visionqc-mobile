@@ -171,9 +171,9 @@ async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=
   const video=$('video');if(video.readyState<2)throw new Error('Espera a que la cámara muestre imagen.');
   const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0,c.width,c.height);
   const data=await window.VQCRoboflow.infer(c,Number(u('remoteConfidence').value));
-  const label=data.predictions.length?'ko':'ok',score=data.predictions.length?Math.max(...data.predictions.map(p=>p.confidence)):null;
+  const label=data.predictions.length?'ko':'uncertain',score=data.predictions.length?Math.max(...data.predictions.map(p=>p.confidence)):null;
   showRemoteBoxes(data.predictions,data.image);
-  newResult(label,score,data.predictions.length?data.predictions.map(p=>p.class).join(', '):'Ningún defecto detectado');
+  newResult(label,score,data.predictions.length?data.predictions.map(p=>p.class).join(', '):'Sin defectos detectados; confirmar visualmente');
   if(!auto){bump(label);await storeHistory({id:id(),at:Date.now(),label,score:score||0,batch:$('batch').value,operator:$('operator').value,thumb:c.toDataURL('image/jpeg',.55),error:false})}
   return;
  }
