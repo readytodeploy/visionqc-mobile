@@ -121,7 +121,21 @@ function patchPredict(emb){
 }
 function referenceEnabled(){return document.getElementById('referenceMode')?.checked===true}
 function predictionFor(emb){return referenceEnabled()?window.VQCReference.predict(emb,st.records,$('referenceSensitivity').value):patchEnabled()?patchPredict(emb):classify(emb)}
-function ready(){return !!st.stream&&!!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
+/* La producción solo inicia tras confirmar explícitamente el conjunto de entrenamiento. */
+const APPROVAL_KEY='vqc_training_approved_v1';
+function calibrationFingerprint(){
+ return [referenceEnabled()?'reference':patchEnabled()?'patch':'knn',needs().ok,needs().ko,
+ st.records.filter(r=>!r.synthetic).map(r=>r.id+':'+r.label).join('|')].join('#');
+}
+function approvalValid(){return localStorage.getItem(APPROVAL_KEY)===calibrationFingerprint()}
+function approveTraining(){
+ if(!calibrationComplete()){toast('Completa el fondo y las muestras antes de confirmar.');return}
+ localStorage.setItem(APPROVAL_KEY,calibrationFingerprint());
+ hideOperatorVerdict();leaveSupervisor();updateOperator();
+ u('operStatus').textContent='Listo para inspeccionar';
+}
+function calibrationComplete(){return !!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
+function ready(){return approvalValid()&&!!st.stream&&!!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
 function refresh(){const n=needs(),o=count('ok'),k=count('ko'),b=count('bg');$('okN').textContent=`${o} / ${n.ok}`;$('koN').textContent=`${k} / ${n.ko}`;$('okBar').style.width=Math.min(100,o/n.ok*100)+'%';$('koBar').style.width=Math.min(100,k/n.ko*100)+'%';$('trainingBadge').textContent=`${o+k} piezas · ${b?'Fondo ✓':'Fondo pendiente'}`;const stage=!st.stream?1:!ready()?2:3; if(patchEnabled()){buildPatchBank();$('patchStatus').textContent='PatchCore Lite · '+patchState.referenceCount+' muestras OK · '+patchState.bank.length+' parches · Umbral '+patchState.threshold.toFixed(3);}$('stepLabel').textContent=`PASO ${stage} / 3`;$('stepText').textContent=stage===1?'Activar cámara':stage===2?'Calibrar IA':'Inspeccionar piezas';$('stepProgress').style.width=(stage===1?0:stage===2?33+57*Math.min(o/n.ok,k/n.ko):100)+'%';$('mainBtn').textContent=!st.stream?'Activar cámara':!st.model?'Cargando modelo…':!ready()?'Calibrar piezas':'Capturar pieza';$('mainBtn').disabled=!!st.stream&&!st.model;$('autoBtn').disabled=!ready();$('autoBtn').textContent=st.auto?'■ Detener':'▶ Auto';$('addOK').disabled=$('addKO').disabled=$('backgroundBtn').disabled=!st.model||!st.stream||st.busy;$('coach').textContent=patchEnabled()?(!b?'Captura primero el fondo sin piezas.':o<3?'Registra al menos tres piezas OK desde ángulos y distancias variados.':'Banco PatchCore Lite listo; añade más muestras OK para mejorar la cobertura del producto.'):(!b?'Captura el fondo sin piezas; después añade diferentes ejemplos OK y KO.':o<n.ok||k<n.ko?'Captura el mismo producto de frente, lados, distintas distancias y con defectos localizados. Mantén fondo e iluminación controlados.':'Calibración completada. Comprueba la matriz y utiliza piezas nunca vistas para validar.');validation();historyUI();updateCalibrationCamera()}
 async function modelLoad(){if(st.model||st.loading)return;st.loading=true;$('cameraState').textContent='Cargando IA · 15%';try{if(!window.tf||!window.mobilenet)throw Error('Sin acceso a las bibliotecas CDN. Comprueba la conexión y reintenta.');await tf.ready();$('cameraState').textContent='Cargando modelo · 45%';st.model=await mobilenet.load({version:2,alpha:1});$('cameraState').textContent='Optimizando · 85%';const blank=document.createElement('canvas');blank.width=blank.height=224;const t=st.model.infer(blank,true);await t.data();t.dispose();$('cameraState').textContent='● Cámara e IA listas';refresh()}catch(e){toast(e.message+' Pulsa Activar cámara para reintentar.')}finally{st.loading=false;refresh()}}
 /* [MEJORA-11] Permisos HTTPS, cámara iOS y controles condicionales de capacidades. */
@@ -296,8 +310,8 @@ function presentOperatorVerdict(label,score){
  const p=u('verdictPanel');if(!label){hideOperatorVerdict();return}
  p.hidden=false;p.className='visible'+(label==='ko'?' ko':label==='uncertain'?' uncertain':'');
  u('vIcon').textContent=label==='ok'?'✓':label==='ko'?'✕':'?';
- u('vText').textContent=label==='ok'?'BUENA':label==='ko'?'DEFECTO':'REVISAR';
- u('vScore').textContent=score===null?'':Math.round(score*100)+'%';
+ u('vText').textContent=label==='ok'?'CORRECTA':label==='ko'?'DEFECTUOSA':'NO RECONOCIDA';
+ u('vScore').textContent=score===null?'Sin puntuación suficiente':'Similitud estimada · '+Math.round(Math.max(0,Math.min(1,score))*100)+'%';
  u('fixButtons').hidden=label!=='uncertain';u('gameHint').hidden=label!=='uncertain';
  u('operStatus').textContent=label==='uncertain'?'Confirma el resultado':st.auto?'Quita la pieza':'Retira la pieza';
  if(navigator.vibrate)navigator.vibrate(label==='ko'?[80,60,80]:[40]);
@@ -305,8 +319,8 @@ function presentOperatorVerdict(label,score){
 function updateOperator(){
  u('lotName').textContent=u('batch').value||'Sin lote';
  u('shiftNumbers').textContent=st.count+' · '+st.koCount+' KO';
- u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Configurar inspección':st.auto?'Detener inspección':uiMode==='automatic'?'Iniciar automático':'Inspeccionar pieza';
- u('operMissing').hidden=!st.stream||ready();if(st.stream&&!ready())u('operStatus').textContent='Calibración pendiente';
+ u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Confirmar calibración':st.auto?'Detener inspección':uiMode==='automatic'?'Iniciar automático':'Inspeccionar pieza';
+ u('operMissing').hidden=!st.stream||ready();if(st.stream&&!ready())u('operStatus').textContent=calibrationComplete()?'Confirma el entrenamiento en Supervisor':'Calibración pendiente';
  u('modoManual').setAttribute('aria-pressed',String(uiMode==='manual'));
  u('modoAuto').setAttribute('aria-pressed',String(uiMode==='automatic'));
  if(!u('superScreen').hidden)updateCalibrationWizard();
@@ -339,14 +353,14 @@ function setSupervisorPane(pane){uiPane=pane;for(const [key,id] of [['cal','calP
 function updateCalibrationWizard(){
  if(uiPane!=='cal')return;const bg=count('bg'),ok=count('ok'),ko=count('ko'),n=needs(),minOK=referenceEnabled()?1:n.ok,stage=!bg?0:ok<minOK?1:ko<n.ko&&!patchEnabled()&&!referenceEnabled()?2:3;
  [...u('calSteps').children].forEach((x,i)=>x.classList.toggle('active',i===Math.min(stage,2)));
- u('calCount').textContent=stage===0?'Registrar fondo':stage===1?ok+' de '+(referenceEnabled()?1:n.ok):stage===2?ko+' de '+n.ko:'Listo para producir ✓';
+ u('calCount').textContent=stage===0?'1 · Registrar fondo':stage===1?'2 · Buenas: '+ok+' de '+minOK:stage===2?'3 · Defectuosas: '+ko+' de '+n.ko:approvalValid()?'✓ Entrenamiento confirmado':'✓ Muestras completas · Confirma para producir';
  if(u('cameraContextDetail')&&uiPane==='cal')u('cameraContextDetail').textContent=stage===0?'ENTRENAR · Fondo vacío':stage===1?'ENTRENAR · Guardar pieza buena':stage===2?'ENTRENAR · Guardar pieza defectuosa':'Calibración completada';
  u('calHelp').textContent=stage===0?'Retira las piezas.':stage===1?(referenceEnabled()?'Fotografía el producto correcto. Añade más referencias desde otros ángulos cuando quieras.':'Coloca una pieza buena desde distintos ángulos.'):stage===2?'Coloca una pieza defectuosa.':'Puedes empezar a inspeccionar.';
  u('calFill').style.width=(stage===0?0:stage===1?10+45*ok/(referenceEnabled()?1:n.ok):stage===2?55+45*ko/n.ko:100)+'%';
- u('calCapture').textContent=!st.stream?'Activar cámara':!st.model?'Cargando IA…':stage===3?'Volver al visor':'Capturar muestra';
- u('calDone').hidden=stage!==3;
+ u('calCapture').textContent=!st.stream?'Activar cámara':!st.model?'Cargando IA…':stage===3?'Confirmar entrenamiento e iniciar producción':'Capturar muestra';
+ u('calDone').hidden=stage!==3;u('calDone').textContent=approvalValid()?'Ir al visor':'Confirmar e iniciar producción';
 }
-async function captureCal(){if(!st.stream){await startCamera();return}if(!st.model){await modelLoad();return}const n=needs(),minOK=referenceEnabled()?1:n.ok,label=!count('bg')?'bg':count('ok')<minOK?'ok':count('ko')<n.ko&&!patchEnabled()&&!referenceEnabled()?'ko':null;if(!label){leaveSupervisor();return}u('calCapture').disabled=true;try{await add(label)}finally{u('calCapture').disabled=false;updateCalibrationWizard()}}
+async function captureCal(){if(!st.stream){await startCamera();return}if(!st.model){await modelLoad();return}const n=needs(),minOK=referenceEnabled()?1:n.ok,label=!count('bg')?'bg':count('ok')<minOK?'ok':count('ko')<n.ko&&!patchEnabled()&&!referenceEnabled()?'ko':null;if(!label){approveTraining();return}u('calCapture').disabled=true;try{await add(label)}finally{u('calCapture').disabled=false;updateCalibrationWizard()}}
 async function undoCal(){const list=st.records.filter(r=>!r.synthetic);const last=list[list.length-1];if(!last)return;await transaction(STORE,'readwrite',o=>o.delete(last.id));st.records=st.records.filter(r=>r.id!==last.id);st.validationKey='';if(last.label==='bg')st.bgTiny=null;refresh()}
 function closeTurn(){if(!confirm('¿Cerrar turno y reiniciar contadores?'))return;const shifts=JSON.parse(localStorage.getItem('vqc_turns')||'[]');shifts.push({at:new Date().toISOString(),...loadCounts(),batch:u('batch').value});localStorage.setItem('vqc_turns',JSON.stringify(shifts));localStorage.setItem(COUNTS_KEY,JSON.stringify({n:0,ko:0}));st.count=st.koCount=0;refresh()}
 function initOperatorUI(){
@@ -403,7 +417,7 @@ function initOperatorUI(){
  u('modoManual').onclick=()=>{uiMode='manual';if(st.auto)stopAuto();updateOperator()};
  u('modoAuto').onclick=()=>{uiMode='automatic';updateOperator()};
  u('operPrimary').onclick=async()=>{if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){startAuto();return}u('operStatus').textContent='Analizando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
- u('calCapture').onclick=captureCal;u('calUndo').onclick=undoCal;u('calDone').onclick=leaveSupervisor;
+ u('calCapture').onclick=captureCal;u('calUndo').onclick=undoCal;u('calDone').onclick=approveTraining;
  u('fixGood').onclick=()=>{u('fixGood').classList.add('chosen');u('correctOK').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
  u('fixBad').onclick=()=>{u('fixBad').classList.add('chosen');u('correctKO').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
  u('closeTurn').onclick=closeTurn;
