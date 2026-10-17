@@ -314,3 +314,30 @@
 .defectZoom canvas{display:block;width:min(100%,360px);height:auto;aspect-ratio:1;margin:10px auto;border-radius:12px}
 .defectZoom button{width:100%;min-height:52px;background:#0a84ff;border-radius:14px;color:#fff;font-weight:750}
 @media(max-width:599px){#verdictPanel{max-height:60dvh;overflow-y:auto}#verdictPanel .remoteDefects{max-height:108px}#verdictPanel .remoteDefectItem canvas{width:38px;height:38px}}
+
+/* Resultado fora da imagem: nunca bloquear visualização do produto. */
+#operScreen{grid-template-rows:auto minmax(0,1fr) auto auto}
+#verdictPanel,#verdictPanel.visible{
+ position:relative;inset:auto;left:auto;right:auto;top:auto;bottom:auto;
+ width:100%;max-width:none;margin:0;transform:none;transition:none;
+ display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+ min-height:0;max-height:28dvh;overflow:auto;padding:10px 16px;
+ border-radius:0;border:0;z-index:1;background:#16212c;color:#fff;
+}
+#verdictPanel[hidden]{display:none}
+#verdictPanel.ko{background:#392023;color:#fff}
+#verdictPanel.uncertain{background:#3b321c;color:#fff}
+#verdictPanel #vIcon{display:none}
+#verdictPanel #vText{font-size:19px;line-height:1.2;text-align:left}
+#verdictPanel #vScore{text-align:left;font-size:13px}
+#verdictPanel .remoteDefects{grid-template-columns:repeat(3,minmax(0,1fr));max-height:88px}
+#verdictPanel .remoteDefectItem{min-height:44px;font-size:11px;padding:4px}
+#verdictPanel .remoteDefectItem canvas{width:36px;height:36px}
+#verdictPanel .inspectAgain{min-height:44px;margin:5px 0}
+#viewer .remoteBox{border:3px solid #ff453a;background:rgba(255,69,58,.12);color:#fff;font-size:12px}
+@media(min-width:600px){
+ #verdictPanel,#verdictPanel.visible{grid-column:2;grid-row:2;align-self:center;max-height:40dvh;border-radius:16px;margin:0 12px;padding:14px}
+ #operVideo{grid-row:2}
+ #operActions{grid-column:2;grid-row:2;align-self:end}
+ #operStatus{grid-column:2;grid-row:2;align-self:start}
+}
