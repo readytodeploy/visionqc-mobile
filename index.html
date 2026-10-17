@@ -106,6 +106,20 @@
 #operMissing{bottom:14px;background:#202936;border-radius:18px;padding:18px;z-index:11}
 @media(prefers-reduced-motion:reduce){#verdictPanel{transition:none}}
 
+
+/* Ajustes visibles y organizados con controles táctiles iOS. */
+#trainingSettings .field{min-height:62px}
+#trainingSettings input[type=number]{width:90px;text-align:center;font-size:18px;font-weight:700}
+#settingsContent .card{margin:12px 0}
+#settingsContent .card h2{font-size:18px;font-weight:740;margin-bottom:8px}
+#settingsContent .card .button,#settingsContent .card .iconBtn{min-height:48px;margin:4px}
+#settingsContent #clearBtn{width:100%;color:#c32831}
+#operStatus{font-size:14px;font-weight:580}
+#operPrimary{font-weight:750}
+#operHead{height:calc(54px + env(safe-area-inset-top))}
+#operVideo .viewer .empty p{font-size:14px}
+#operMissing p{font-size:15px;font-weight:650}
+#operMissing button{background:#0a84ff;font-size:15px;font-weight:700;min-height:52px}
 </style>
 </head>
 <body>
@@ -119,7 +133,7 @@ productionCard→turnContent; cameraCard→settingsContent; exportBtn/importBtn 
 <section id="superScreen" hidden><header id="superHead"><b>Supervisor</b><button id="exitSuper">Salir ✓</button></header>
 <div id="calPane" class="superPane"><h2>Calibrar</h2><div id="calSteps" class="calSteps"><span class="active">Fondo</span><span>Buenas</span><span>Malas</span></div><div id="calViewer"></div><div class="calProgress"><i id="calFill"></i></div><div id="calCount">Fondo vacío</div><p id="calHelp">Retira todas las piezas.</p><button id="calCapture" class="primary">Capturar</button><button id="calUndo" class="secondary">Deshacer última</button><button id="calDone" class="secondary" hidden>Volver a inspección</button></div>
 <div id="turnPane" class="superPane" hidden><h2>Turno</h2><div id="turnContent"></div><button id="closeTurn" class="secondary">Cerrar turno</button></div>
-<div id="settingsPane" class="superPane" hidden><h2>Ajustes</h2><div id="settingsContent"></div><button id="setPin" class="secondary">Cambiar PIN</button></div>
+<div id="settingsPane" class="superPane" hidden><h2>Ajustes</h2><div id="settingsContent"></div></div>
 <nav id="superTabs" aria-label="Supervisor" role="tablist"><button data-pane="cal" aria-selected="true">◎ Calibrar</button><button data-pane="turn" aria-selected="false">▦ Turno</button><button data-pane="settings" aria-selected="false">⚙ Ajustes</button></nav></section>
 <div id="accessMenu" hidden><button id="accessSupervisor">Supervisor</button></div>
 <div id="pinOverlay" hidden role="dialog" aria-modal="true"><div id="pinBox"><h2 id="pinTitle">PIN supervisor</h2><p id="pinHint">Introduce cuatro dígitos</p><input id="pinInput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="PIN de cuatro dígitos"><p id="pinMessage"></p><div class="two"><button id="pinBack" class="secondary">Cancelar</button><button id="pinOK" class="primary">Continuar</button></div></div></div>
@@ -431,8 +445,8 @@ function presentOperatorVerdict(label,score){
 function updateOperator(){
  u('lotName').textContent=u('batch').value||'Sin lote';
  u('shiftNumbers').textContent=st.count+' · '+st.koCount+' KO';
- u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Falta calibrar':st.auto?'Detener':uiMode==='automatic'?'Iniciar auto':'Inspeccionar';
- u('operMissing').hidden=!st.stream||ready();
+ u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Configurar inspección':st.auto?'Detener inspección':uiMode==='automatic'?'Iniciar automático':'Inspeccionar pieza';
+ u('operMissing').hidden=!st.stream||ready();if(st.stream&&!ready())u('operStatus').textContent='Calibración pendiente';
  u('modoManual').setAttribute('aria-pressed',String(uiMode==='manual'));
  u('modoAuto').setAttribute('aria-pressed',String(uiMode==='automatic'));
  if(!u('superScreen').hidden)updateCalibrationWizard();
@@ -441,7 +455,7 @@ const originalRefresh=refresh;
 refresh=function(){originalRefresh();updateOperator()};
 async function pinHash(pin,salt){const data=new TextEncoder().encode(salt+':'+pin),hash=await crypto.subtle.digest('SHA-256',data);return Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('')}
 function savedPin(){try{return JSON.parse(localStorage.getItem('vqc_super_pin'))}catch(e){return null}}
-function requestSupervisor(){uiPinIntent='unlock';u('pinOverlay').hidden=false;u('pinInput').value='';u('pinMessage').textContent='';u('pinTitle').textContent=savedPin()?'PIN supervisor':'Configurar PIN supervisor';u('pinHint').textContent=savedPin()?'Introduce el PIN de cuatro dígitos.':'Crea un PIN de cuatro dígitos.';u('pinInput').focus()}
+function requestSupervisor(){u('pinOverlay').hidden=true;showSupervisor('cal')}
 async function verifyPin(){const pin=u('pinInput').value;if(!/^\d{4}$/.test(pin)){u('pinMessage').textContent='Se requieren cuatro números.';return}const saved=savedPin();
  if(!saved||uiPinIntent==='change'){const salt=crypto.randomUUID?.()||String(Date.now());localStorage.setItem('vqc_super_pin',JSON.stringify({salt,hash:await pinHash(pin,salt)}));u('pinOverlay').hidden=true;if(uiPinIntent==='unlock')showSupervisor('cal');return}
  if(await pinHash(pin,saved.salt)===saved.hash){u('pinOverlay').hidden=true;showSupervisor('cal')}else u('pinMessage').textContent='PIN incorrecto.';
@@ -471,7 +485,23 @@ function initOperatorUI(){
  u('settingsPane').append(u('cameraCard'));
  const advanced=document.createElement('details');advanced.className='card';advanced.innerHTML='<summary>Avanzado</summary>';
  for(const id of ['autoThreshold','minSimilarity','minMargin','validation']){const el=u(id);if(el)advanced.append(el.closest('.field')||el)}
- u('settingsPane').append(advanced,u('soundBtn'),u('themeBtn'),u('flipBtn'));u('settingsPane').append(u('training'));u('training').hidden=true;
+ u('settingsPane').append(advanced,u('soundBtn'),u('themeBtn'),u('flipBtn'));
+ // Controles de entrenamiento dentro de Ajustes, no ocultos.
+ const trainSettings=document.createElement('div');trainSettings.className='card';trainSettings.id='trainingSettings';
+ const heading=document.createElement('h2');heading.textContent='Entrenamiento';trainSettings.append(heading);
+ for(const id of ['targetOK','targetKO','augmentation']){const el=u(id);trainSettings.append(el.closest('.field'))}
+ const help=document.createElement('p');help.className='muted';help.textContent='Define las imágenes necesarias por clase. Usa distintos ángulos, acercamientos y defectos.';trainSettings.append(help);
+ u('settingsContent').prepend(trainSettings);
+ const preferences=document.createElement('div');preferences.className='card';preferences.innerHTML='<h2>Preferencias</h2>';
+ preferences.append(u('soundBtn'),u('themeBtn'),u('flipBtn'));
+ u('settingsContent').append(preferences);
+ const detection=document.createElement('div');detection.className='card';detection.innerHTML='<h2>Detección</h2>';
+ for(const id of ['patchcoreMode','patchSensitivity']){const el=u(id);if(el)detection.append(el.closest('.field'))}
+ u('settingsContent').append(detection,advanced);
+ const data=document.createElement('div');data.className='card';data.innerHTML='<h2>Datos de calibración</h2>';
+ for(const id of ['exportBtn','importBtn','fileImport','clearBtn'])data.append(u(id));
+ u('settingsContent').append(data);
+ u('training').hidden=true;
  u('operMenu').onclick=()=>u('accessMenu').hidden=!u('accessMenu').hidden;
  u('accessSupervisor').onclick=requestSupervisor;
  u('goSuper').onclick=requestSupervisor;
@@ -486,7 +516,7 @@ function initOperatorUI(){
  u('fixGood').onclick=()=>{u('correctOK').click();hideOperatorVerdict()};
  u('fixBad').onclick=()=>{u('correctKO').click();hideOperatorVerdict()};
  u('closeTurn').onclick=closeTurn;
- u('setPin').onclick=()=>{uiPinIntent='change';u('pinOverlay').hidden=false;u('pinInput').value='';u('pinTitle').textContent='Crear nuevo PIN'};
+ u('setPin').hidden=true;
  u('batch').oninput=updateOperator;
  repositionViewer(u('operVideo'));
 }
