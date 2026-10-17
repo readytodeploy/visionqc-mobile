@@ -130,3 +130,28 @@
 #settingsContent .field{min-height:60px}
 #settingsContent .muted{line-height:1.45}
 @media(prefers-reduced-motion:no-preference){.defectMarker{animation:markerPulse 1.3s ease-out infinite}@keyframes markerPulse{50%{box-shadow:0 0 0 8px #ff453a30}}}
+
+/* Compact inspector feedback — keeps the product and controls unobstructed. */
+#operVideo{isolation:isolate}
+#verdictPanel{position:absolute;top:auto;left:14px;right:14px;bottom:14px;width:auto;height:auto;min-height:0;padding:12px 14px;border-radius:20px;display:flex;flex-direction:column;gap:4px;align-items:stretch;justify-content:center;background:#d9f8e7;color:#07512e;transform:translateY(calc(100% + 24px));border:1px solid #b1e7cc;z-index:12}
+#verdictPanel.visible{transform:translateY(0)}
+#verdictPanel.ko{background:#ffe1e1;color:#831e22;border-color:#f9b6b7}
+#verdictPanel.uncertain{background:#fff0ba;color:#644400;border-color:#e9cd66}
+#verdictPanel[hidden]{display:none}
+#verdictPanel.visible{pointer-events:auto}
+#vIcon{font-size:28px;line-height:1;display:inline}
+#vText{font-size:clamp(25px,7vw,34px);font-weight:800;letter-spacing:-.5px;line-height:1.08}
+#vScore{font-size:13px;font-weight:650}
+#gameHint{display:none}
+#fixButtons{margin-top:8px;gap:8px;width:100%}
+#fixButtons[hidden]{display:none}
+#fixButtons:not([hidden]){display:grid;grid-template-columns:1fr 1fr}
+#fixButtons button{min-height:52px;background:#182534;color:#fff;border:0;border-radius:13px;font-size:15px;font-weight:750;padding:8px}
+#fixButtons button:first-child{background:#137953;color:white}
+#operHead{background:#10151d}
+#operStatus{height:30px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 20px}
+#operActions{position:relative;z-index:15;padding:10px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid #2e3846}
+#operPrimary{min-height:60px;border-radius:16px}
+.segment{margin-bottom:10px}
+#defectMarkers{z-index:3}
+@media(max-height:700px){#verdictPanel{bottom:8px;padding:10px 12px}#fixButtons button{min-height:48px}#vText{font-size:25px}}
