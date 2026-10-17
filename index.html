@@ -65,6 +65,24 @@ body[data-tab="calibration"] #trainingInstruction{padding:12px 14px;border-radiu
 #tab-calibration #training>.viewer canvas.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #tab-calibration #training>.quality{width:100%;flex:none}
 #tab-calibration .calibrateStart{position:relative;z-index:2}
+
+/* [MEJORA-30] El visor es el primer elemento operativo en Calibración, sin cajas anidadas. */
+#tab-calibration{display:flex;flex-direction:column;gap:10px}
+#tab-calibration[hidden]{display:none}
+#tab-calibration #viewer{order:2;width:100%;height:clamp(310px,46dvh,520px)!important;min-height:310px;margin:0;flex:none;border-radius:20px;overflow:hidden;background:#0b1018}
+#tab-calibration #viewer video{display:block!important;visibility:visible!important;opacity:1!important;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#tab-calibration #viewer .empty{z-index:1}
+#tab-calibration #viewer .overlay{z-index:2}
+#tab-calibration #viewer .chips,#tab-calibration #viewer .result,#tab-calibration #viewer .viewerBadge{z-index:3}
+#tab-calibration .tab-caption{order:0}
+#tab-calibration #trainingInstruction{order:1;margin:0}
+#tab-calibration .quality{order:3}
+#tab-calibration #calibrationCameraBtn{order:4;margin:2px 0}
+#tab-calibration #calibrationCaptures{order:5;margin:0}
+#tab-calibration #training{order:6;margin:4px 0 0}
+#tab-calibration #training .calibrationCaptures{display:none}
+#tab-calibration #viewer .hint{max-width:90%}
+@media(max-height:720px){#tab-calibration #viewer{height:39dvh!important;min-height:250px}}
 </style>
 </head>
 <body><main class="app">
@@ -166,7 +184,7 @@ function ready(){return !!st.stream&&!!st.model&&trained()}
 function refresh(){const n=needs(),o=count('ok'),k=count('ko'),b=count('bg');$('okN').textContent=`${o} / ${n.ok}`;$('koN').textContent=`${k} / ${n.ko}`;$('okBar').style.width=Math.min(100,o/n.ok*100)+'%';$('koBar').style.width=Math.min(100,k/n.ko*100)+'%';$('trainingBadge').textContent=`${o+k} piezas · ${b?'Fondo ✓':'Fondo pendiente'}`;const stage=!st.stream?1:!ready()?2:3;$('stepLabel').textContent=`PASO ${stage} / 3`;$('stepText').textContent=stage===1?'Activar cámara':stage===2?'Calibrar IA':'Inspeccionar piezas';$('stepProgress').style.width=(stage===1?0:stage===2?33+57*Math.min(o/n.ok,k/n.ko):100)+'%';$('mainBtn').textContent=!st.stream?'Activar cámara':!st.model?'Cargando modelo…':!trained()?'Calibrar piezas':'Capturar pieza';$('mainBtn').disabled=!!st.stream&&!st.model;$('autoBtn').disabled=!ready();$('autoBtn').textContent=st.auto?'■ Detener':'▶ Auto';$('addOK').disabled=$('addKO').disabled=$('backgroundBtn').disabled=!st.model||!st.stream||st.busy;$('coach').textContent=!b?'Captura el fondo sin piezas; después añade diferentes ejemplos OK y KO.':o<n.ok||k<n.ko?'Captura el mismo producto de frente, lados, distintas distancias y con defectos localizados. Mantén fondo e iluminación controlados.':'Calibración completada. Comprueba la matriz y utiliza piezas nunca vistas para validar.';validation();historyUI();updateCalibrationCamera()}
 async function modelLoad(){if(st.model||st.loading)return;st.loading=true;$('cameraState').textContent='Cargando IA · 15%';try{if(!window.tf||!window.mobilenet)throw Error('Sin acceso a las bibliotecas CDN. Comprueba la conexión y reintenta.');await tf.ready();$('cameraState').textContent='Cargando modelo · 45%';st.model=await mobilenet.load({version:2,alpha:.5});$('cameraState').textContent='Optimizando · 85%';const blank=document.createElement('canvas');blank.width=blank.height=224;const t=st.model.infer(blank,true);await t.data();t.dispose();$('cameraState').textContent='● Cámara e IA listas';refresh()}catch(e){toast(e.message+' Pulsa Activar cámara para reintentar.')}finally{st.loading=false;refresh()}}
 /* [MEJORA-11] Permisos HTTPS, cámara iOS y controles condicionales de capacidades. */
-async function startCamera(){if(!isSecureContext){toast('Cámara bloqueada: publica la aplicación con HTTPS y vuelve a abrirla.');return}if(!navigator.mediaDevices?.getUserMedia){toast('Safari no permite cámara en este contexto. Revisa los permisos en Ajustes > Safari.');return}try{st.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:st.facing||'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:15,max:30}}});$('video').srcObject=st.stream;await $('video').play();$('empty').hidden=true;st.session++;requestAnimationFrame(drawGuide);cameraControls();refresh();await modelLoad();toast('Cámara lista. Registra el fondo vacío y las muestras.') }catch(e){toast(e.name==='NotAllowedError'?'Permiso de cámara denegado. Actívalo en Ajustes de Safari y pulsa Activar cámara.':'No se pudo iniciar la cámara: '+e.message);stopCamera()}}
+async function startCamera(){if(!isSecureContext){toast('Cámara bloqueada: publica la aplicación con HTTPS y vuelve a abrirla.');return}if(!navigator.mediaDevices?.getUserMedia){toast('Safari no permite cámara en este contexto. Revisa los permisos en Ajustes > Safari.');return}try{st.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:st.facing||'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:15,max:30}}});$('video').srcObject=st.stream;await $('video').play();$('empty').hidden=true;st.session++;requestAnimationFrame(drawGuide);cameraControls();refresh();toast('Cámara activa. Puedes encuadrar la pieza mientras carga la IA.');modelLoad().catch(e=>toast('No se pudo cargar la IA: '+e.message)) }catch(e){toast(e.name==='NotAllowedError'?'Permiso de cámara denegado. Actívalo en Ajustes de Safari y pulsa Activar cámara.':'No se pudo iniciar la cámara: '+e.message);stopCamera()}}
 function stopCamera(){stopAuto();st.stream?.getTracks().forEach(t=>t.stop());st.stream=null;$('video').srcObject=null;$('empty').hidden=false;$('cameraState').textContent='● Cámara inactiva';st.lastGray=null;refresh()}
 async function cameraControls(){const track=st.stream?.getVideoTracks()[0],caps=track?.getCapabilities?.()||{};$('flipBtn').disabled=!track;$('torchBtn').disabled=!('torch'in caps);$('torchBtn').textContent='Linterna';$('focusBtn').disabled=!(caps.focusMode?.includes?.('manual')||caps.exposureMode?.includes?.('manual'));$('zoomBox').hidden=!(caps.zoom&&Number.isFinite(caps.zoom.min));if(!$('zoomBox').hidden){$('zoom').min=caps.zoom.min;$('zoom').max=caps.zoom.max;$('zoom').step=caps.zoom.step||.1;$('zoom').value=track.getSettings?.().zoom||caps.zoom.min}}
 async function constrain(obj){const t=st.stream?.getVideoTracks()[0];if(!t)return;try{await t.applyConstraints({advanced:[obj]})}catch(e){toast('La cámara no admite este ajuste en Safari.') }}
@@ -219,8 +237,8 @@ function buildTabs(){
 /* [MEJORA-24] Control explícito de cámara en Calibración; no exige navegación previa. */
 function updateCalibrationCamera(){
  const b=$('calibrationCameraBtn');if(!b)return;
- b.textContent=!st.stream?'◎ Activar cámara':!st.model?'Cargando IA…':'↻ Reanudar vista previa';
- b.disabled=!!st.stream&&!st.model;
+ b.textContent=!st.stream?'◎ Activar cámara':$('video').paused?'▶ Reanudar cámara':'↻ Reanudar cámara';
+ b.disabled=false;
  $('viewerBadge').textContent=!st.stream?'◎ Toca Activar cámara':!st.model?'◌ Preparando IA':'● Cámara en directo';
  $('viewerBadge').classList.toggle('live',!!st.stream);
  if(currentTab==='calibration'){
@@ -236,7 +254,7 @@ function selectTab(name){
  if(name==='visor'||name==='calibration'){
   const host=name==='visor'?pane:$('training');
   const viewer=$('viewer'),quality=document.querySelector('.quality');
-  if(name==='calibration'){host.prepend(quality);host.prepend(viewer)}
+  if(name==='calibration'){const anchor=$('trainingInstruction');anchor.after(viewer);viewer.after(quality)}
   else{const step=pane.querySelector('.progress');step.after(viewer);viewer.after(quality)}
  }
  for(const tab of ['visor','calibration','production','camera']){
