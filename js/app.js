@@ -343,8 +343,8 @@ function setCameraContext(training){
  tag.textContent=training?'◎ ENTRENAMIENTO':'● INSPECCIÓN';
  let detail=u('cameraContextDetail');
  if(!detail){detail=document.createElement('div');detail.id='cameraContextDetail';viewer.append(detail)}
- if(!training)detail.textContent='Producción · Captura real';
- else detail.textContent='Muestra para calibración · No cuenta como producción';
+ if(!training)detail.textContent='';
+ else detail.textContent='Centra la pieza dentro de las esquinas';
 }
 function repositionViewer(target){setCameraContext(target.id==='calViewer');target.append(u('viewer'));requestAnimationFrame(async()=>{if(st.stream){try{const v=u('video');if(v.srcObject!==st.stream)v.srcObject=st.stream;await v.play();u('empty').hidden=true}catch(e){u('operStatus').textContent='Pulsa activar cámara para reanudar'}}drawGuide()})}
 function showSupervisor(pane){stopAuto();u('operScreen').hidden=true;u('superScreen').hidden=false;u('accessMenu').hidden=true;setSupervisorPane(pane)}
