@@ -10,9 +10,9 @@
 <body><main class="shell">
 <header><div class="brand">VisionQC<small>CONTROL DE CALIDAD</small></div><div class="top-controls"><button id="cameraTop" type="button">Activar cámara</button><button id="flipTop" type="button" disabled aria-label="Cambiar cámara">↻</button></div><div class="pill" style="display:none"><i id="cameraDot" class="dot"></i><span id="cameraLabel">Cámara desconectada</span></div></header>
 <div class="screen" id="screen"><video id="video" playsinline webkit-playsinline muted autoplay></video><div id="placeholder" class="placeholder"><div><div class="camera-icon">◎</div><strong>Cámara lista para iniciar</strong><p>Activa la cámara y coloca la pieza dentro del recuadro.</p></div></div><div class="view-top"><span class="overlay-chip"><b id="modeLabel">MODO MANUAL</b></span><span class="overlay-chip" id="fpsLabel">IA pendiente</span></div><div class="reticle"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="cross"></span></div><div class="guide">Coloca una pieza en el recuadro</div></div>
-<div id="status" class="status" aria-live="polite"><div><span class="kicker" id="statusKicker">RESULTADO</span><strong id="statusText">Sin calibrar</strong></div><div class="confidence" id="confidence">—<small>CONFIANZA</small></div></div>
+<div id="status" class="status" aria-live="polite"><div><span class="kicker" id="statusKicker">RESULTADO</span><strong id="statusText">Sin calibrar</strong></div><div class="confidence" id="confidence">—<small>SIMILITUD</small></div></div>
 <div class="actions"><button class="btn primary" id="scanBtn" disabled>◎ Inspeccionar</button><button class="btn" id="continuousBtn" disabled>▶ Automático</button><button class="btn" id="cameraBtn">Activar cámara</button><button class="btn" id="flipBtn" disabled>Cambiar cámara</button></div><div id="alert" class="alert" role="alert"></div>
-<details class="advanced"><summary>Calibración y ajustes <span id="trainingLabel" class="minor">0 correctas · 0 defectuosas</span></summary><section class="section"><div class="section-header"><h2>Registrar ejemplos</h2></div><div class="samples"><button class="sample-btn good" id="addGood" disabled><b>＋ Correcta</b><small>Muestra OK</small></button><button class="sample-btn bad" id="addBad" disabled><b>＋ Defectuosa</b><small>Muestra KO</small></button></div><div class="settings"><label for="threshold">Confianza mínima <b id="thresholdValue">75%</b></label><input type="range" id="threshold" min="50" max="99" value="75"></div><div class="settings"><label for="interval">Velocidad</label><select class="btn" id="interval"><option value="500">2 fps</option><option value="333">3 fps</option></select></div><p class="help">Registra al menos 3 ejemplos de cada clase. Mantén la luz y el encuadre consistentes. La confianza es aproximada y requiere validación real.</p><button id="resetTraining" class="linkbtn">Borrar calibración</button></section></details>
+<details class="advanced"><summary>Calibración y ajustes <span id="trainingLabel" class="minor">0 correctas · 0 defectuosas</span></summary><section class="section"><div class="section-header"><h2>Registrar ejemplos</h2></div><div class="samples"><button class="sample-btn good" id="addGood" disabled><b>＋ Correcta</b><small>Muestra OK</small></button><button class="sample-btn bad" id="addBad" disabled><b>＋ Defectuosa</b><small>Muestra KO</small></button></div><div class="settings"><label for="threshold">Similitud mínima <b id="thresholdValue">75%</b></label><input type="range" id="threshold" min="50" max="99" value="75"></div><div class="settings"><label for="interval">Velocidad</label><select class="btn" id="interval"><option value="500">2 fps</option><option value="333">3 fps</option></select></div><p class="help">Registra al menos 3 ejemplos de cada clase. Mantén la luz y el encuadre consistentes. Se comprueba nitidez, iluminación y estabilidad entre lecturas. El porcentaje es una puntuación de similitud, no una probabilidad calibrada. Requiere validación con piezas reales.</p><button id="resetTraining" class="linkbtn">Borrar calibración</button></section></details>
 <section class="sheet" id="sheet"><span class="grab"></span><div class="sheet-title"><h2>Resumen de inspección</h2><button id="toggleHistory" class="linkbtn" aria-expanded="false">Historial ↑</button></div><div class="stats"><div class="stat"><small>Total</small><b id="total">0</b></div><div class="stat"><small>Defectos</small><b id="badCount">0</b></div><div class="stat"><small>Tasa KO</small><b id="defectRate">0%</b></div></div><div id="history" class="history"><div class="empty">Sin inspecciones aún.</div></div></section><div class="footer">Prototipo, no validado para decisiones industriales automatizadas.</div><canvas id="captureCanvas"></canvas></main>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
@@ -20,22 +20,108 @@
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id);let stream=null,model=null,knn=null,loading=null,running=false,busy=false,continuousTimer=null,frameCounter=0,lastCount=0,inspectCount=0,badCount=0,goodSamples=0,badSamples=0,history=[],facing='environment';
+const referenceVectors={ok:[],ko:[]};
+let candidate=null,streak=0,lastStableLabel=null;
+const REQUIRED_STREAK=3; // Tres evaluaciones consecutivas para confirmar en automático.
+
 const isSecure=window.isSecureContext||location.hostname==='localhost'||location.hostname==='127.0.0.1';
 function message(s){$('alert').textContent=s;$('alert').classList.toggle('visible',!!s)}
-function updateStatus(type,label,certainty=null){$('status').className='status'+(type?' '+type:'');$('statusText').textContent=label;$('confidence').innerHTML=(certainty===null?'—':Math.round(certainty*100)+'%')+'<small>CONFIANZA</small>'}
+function updateStatus(type,label,certainty=null){$('status').className='status'+(type?' '+type:'');$('statusText').textContent=label;$('confidence').innerHTML=(certainty===null?'—':Math.round(certainty*100)+'%')+'<small>SIMILITUD</small>'}
 function updateButtons(){const calibrated=goodSamples>=3&&badSamples>=3; $('addGood').disabled=$('addBad').disabled=!stream||!model;$('scanBtn').disabled=$('continuousBtn').disabled=!stream||!calibrated||!model;$('flipBtn').disabled=!stream;$('cameraBtn').textContent=stream?'■ Apagar cámara':'◉ Activar cámara';$('cameraTop').textContent=stream?'Detener cámara':'Activar cámara';$('flipTop').disabled=!stream;$('continuousBtn').textContent=running?'■ Detener escaneo':'▶ Escaneo continuo';$('modeLabel').textContent=running?'ESCANEO CONTINUO':'MODO MANUAL';$('trainingLabel').textContent=goodSamples+' correctas · '+badSamples+' defectuosas';}
-async function ensureModel(){if(model)return;if(loading)return loading;loading=(async()=>{if(!window.tf||!window.mobilenet||!window.knnClassifier)throw Error('No se pudieron cargar las bibliotecas de IA. Comprueba la conexión a internet.');$('fpsLabel').textContent='Cargando IA…';await tf.ready();model=await mobilenet.load({version:2,alpha:0.5});knn=knnClassifier.create();$('fpsLabel').textContent='MobileNet + KNN';updateButtons();})().catch(e=>{loading=null;$('fpsLabel').textContent='IA no disponible';throw e});return loading}
+async function ensureModel(){if(model)return;if(loading)return loading;loading=(async()=>{if(!window.tf||!window.mobilenet||!window.knnClassifier)throw Error('No se pudieron cargar las bibliotecas de IA. Comprueba la conexión a internet.');$('fpsLabel').textContent='Cargando IA…';await tf.ready();model=await mobilenet.load({version:2,alpha:1.0});knn=knnClassifier.create();$('fpsLabel').textContent='MobileNet V2 · KNN + filtros';updateButtons();})().catch(e=>{loading=null;$('fpsLabel').textContent='IA no disponible';throw e});return loading}
 function stopCamera(){stopContinuous();if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('video').srcObject=null;$('placeholder').hidden=false;$('cameraDot').classList.remove('live');$('cameraLabel').textContent='Cámara desconectada';updateButtons();}
 async function startCamera(){if(!isSecure){message('Safari exige HTTPS para acceder a la cámara (excepto localhost). Publica este HTML en un sitio HTTPS.');return}if(!navigator.mediaDevices?.getUserMedia){message('Este navegador no ofrece acceso a getUserMedia. Usa Safari actualizado en iOS.');return}try{message('');$('cameraBtn').disabled=true;const constraints={audio:false,video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:15,max:30}}};stream=await navigator.mediaDevices.getUserMedia(constraints);const video=$('video');video.srcObject=stream;await video.play();$('placeholder').hidden=true;$('cameraDot').classList.add('live');$('cameraLabel').textContent='Cámara activa';updateStatus('','Listo para calibrar');try{await ensureModel()}catch(e){message(e.message)}updateButtons()}catch(e){message('No fue posible abrir la cámara ('+e.name+'). Revisa los permisos de Safari, HTTPS y que otra app no esté utilizándola.');stopCamera()}finally{$('cameraBtn').disabled=false;updateButtons()}}
+function qualityCheck(canvas){
+  // Estadísticas sobre la región útil: evita inferencias cuando hay poca luz o desenfoque.
+  const c=document.createElement('canvas');c.width=64;c.height=64;
+  const cx=c.getContext('2d',{willReadFrequently:true});cx.drawImage(canvas,0,0,64,64);
+  const pixels=cx.getImageData(0,0,64,64).data;
+  const gray=new Float32Array(4096);let brightness=0,squared=0;
+  for(let i=0;i<4096;i++){const k=i*4,g=.299*pixels[k]+.587*pixels[k+1]+.114*pixels[k+2];gray[i]=g;brightness+=g;squared+=g*g}
+  brightness/=4096;
+  const contrast=Math.sqrt(Math.max(0,squared/4096-brightness*brightness));
+  let lap=0,lapSquared=0,n=0;
+  for(let y=1;y<63;y++)for(let x=1;x<63;x++){
+    const i=y*64+x,v=4*gray[i]-gray[i-1]-gray[i+1]-gray[i-64]-gray[i+64];
+    lap+=v;lapSquared+=v*v;n++;
+  }
+  const sharpness=lapSquared/n-(lap/n)**2;
+  if(brightness<40)return 'Imagen demasiado oscura. Mejora la iluminación.';
+  if(brightness>225)return 'Exceso de luz. Evita reflejos fuertes.';
+  if(contrast<13)return 'Poco contraste. Ajusta la iluminación o el fondo.';
+  if(sharpness<25)return 'Imagen borrosa. Sujeta el iPhone y enfoca la pieza.';
+  return null;
+}
+function vectorOf(tensor){
+  const v=Array.from(tensor.dataSync());
+  const norm=Math.hypot(...v)||1;return v.map(x=>x/norm);
+}
+function cosine(a,b){let sum=0;for(let i=0;i<a.length;i++)sum+=a[i]*b[i];return sum}
+function strongestReference(vector,cls){
+  return Math.max(-1,...referenceVectors[cls].map(v=>cosine(vector,v)));
+}
+function resetStability(){candidate=null;streak=0;lastStableLabel=null}
 function capture(){const v=$('video');if(!stream||v.readyState<2||!v.videoWidth)throw Error('La cámara todavía no tiene imagen disponible.');const c=$('captureCanvas');c.width=224;c.height=224;const ctx=c.getContext('2d',{willReadFrequently:true});const vw=v.videoWidth,vh=v.videoHeight; // ROI central equivalente al cuadro de alineación, con recorte cuadrado.
 const side=Math.min(vw*.68,vh*.58),sx=(vw-side)/2,sy=(vh-side)/2;ctx.drawImage(v,sx,sy,side,side,0,0,224,224);return c}
-async function addSample(cls){if(busy||!model)return;busy=true;try{const canvas=capture();const emb=tf.tidy(()=>model.infer(canvas,true));try{knn.addExample(emb,cls)}finally{emb.dispose()}if(cls==='ok')goodSamples++;else badSamples++;updateButtons();updateStatus('warn','Muestras registradas');message(goodSamples>=3&&badSamples>=3?'Calibración básica lista. Recomendado: agregar más ejemplos de ambas clases y validar con piezas no vistas.':'Registra al menos 3 muestras distintas por clase.');}catch(e){message('Error de calibración: '+e.message)}finally{busy=false}}
+async function addSample(cls){if(busy||!model)return;busy=true;try{const canvas=capture();const issue=qualityCheck(canvas);
+if(issue){message('Muestra descartada: '+issue);return}
+const emb=tf.tidy(()=>model.infer(canvas,true));
+try{const v=vectorOf(emb);referenceVectors[cls].push(v);knn.addExample(emb,cls)}
+finally{emb.dispose()}
+if(cls==='ok')goodSamples++;else badSamples++;resetStability();updateButtons();updateStatus('warn','Muestras registradas');message(goodSamples>=3&&badSamples>=3?'Calibración básica lista. Recomendado: agregar más ejemplos de ambas clases y validar con piezas no vistas.':'Registra al menos 3 muestras distintas por clase.');}catch(e){message('Error de calibración: '+e.message)}finally{busy=false}}
 function updateCounters(){ $('total').textContent=inspectCount;$('badCount').textContent=badCount;$('defectRate').textContent=inspectCount?Math.round(100*badCount/inspectCount)+'%':'0%'}
-function renderHistory(){const el=$('history');el.replaceChildren();if(!history.length){el.innerHTML='<div class="empty">Todavía no hay piezas inspeccionadas.</div>';return}history.forEach(item=>{const row=document.createElement('div');row.className='entry';const im=document.createElement('img');im.src=item.image;im.alt='Fotografía de la pieza';const main=document.createElement('div');main.className='entry-main';const b=document.createElement('strong');b.textContent=item.label;const sm=document.createElement('small');sm.textContent=item.time+' · Confianza '+item.conf+'%';main.append(b,sm);const tag=document.createElement('span');tag.className='tag'+(item.cls==='ko'?' bad':'');tag.textContent=item.cls==='ko'?'KO':'OK';row.append(im,main,tag);el.append(row)})}
-async function scan(){if(busy||!stream||goodSamples<3||badSamples<3)return;busy=true;try{const canvas=capture();const emb=tf.tidy(()=>model.infer(canvas,true));let result;try{result=await knn.predictClass(emb,Math.min(3,goodSamples+badSamples))}finally{emb.dispose()}const cls=result.label,confidence=result.confidences[cls]??0,threshold=Number($('threshold').value)/100;if(confidence<threshold){updateStatus('warn','Inspección incierta',confidence);return}updateStatus(cls==='ok'?'ok':'ko',cls==='ok'?'CONFORME · OK':'DEFECTO · KO',confidence); // Un resultado no equivale a una pieza única. En continuo, separación temporal configurable fija.
-const now=Date.now();if(!running||now-lastCount>=2500){lastCount=now;inspectCount++;if(cls==='ko')badCount++;history.unshift({cls,label:cls==='ko'?'Pieza defectuosa':'Pieza correcta',conf:Math.round(confidence*100),time:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),image:canvas.toDataURL('image/jpeg',.6)});if(history.length>40)history.pop();updateCounters();renderHistory();}frameCounter++;}catch(e){message('Error al inspeccionar: '+e.message);stopContinuous()}finally{busy=false}}
-function stopContinuous(){running=false;if(continuousTimer){clearTimeout(continuousTimer);continuousTimer=null}updateButtons()}
+function renderHistory(){const el=$('history');el.replaceChildren();if(!history.length){el.innerHTML='<div class="empty">Todavía no hay piezas inspeccionadas.</div>';return}history.forEach(item=>{const row=document.createElement('div');row.className='entry';const im=document.createElement('img');im.src=item.image;im.alt='Fotografía de la pieza';const main=document.createElement('div');main.className='entry-main';const b=document.createElement('strong');b.textContent=item.label;const sm=document.createElement('small');sm.textContent=item.time+' · Similitud '+item.conf+'%';main.append(b,sm);const tag=document.createElement('span');tag.className='tag'+(item.cls==='ko'?' bad':'');tag.textContent=item.cls==='ko'?'KO':'OK';row.append(im,main,tag);el.append(row)})}
+async function scan(){
+ if(busy||!stream||goodSamples<3||badSamples<3)return;
+ busy=true;
+ try{
+  const canvas=capture();
+  const issue=qualityCheck(canvas);
+  if(issue){resetStability();updateStatus('warn','Revisar captura');message(issue);return}
+  message('');
+  const emb=tf.tidy(()=>model.infer(canvas,true));
+  let result,vector;
+  try{
+   vector=vectorOf(emb);
+   result=await knn.predictClass(emb,Math.min(5,goodSamples+badSamples));
+  }finally{emb.dispose()}
+  const cls=result.label;
+  const knnScore=result.confidences[cls]??0;
+  const own=strongestReference(vector,cls),opposite=strongestReference(vector,cls==='ok'?'ko':'ok');
+  // No confundir el voto del KNN con una probabilidad real de defecto:
+  // la decisión exige acuerdo del KNN con la referencia más cercana y una separación mínima.
+  const separation=own-opposite;
+  const nearestClass=strongestReference(vector,'ok')>=strongestReference(vector,'ko')?'ok':'ko';
+  const similarity=Math.max(0,Math.min(1,own));
+  const threshold=Number($('threshold').value)/100;
+  if(cls!==nearestClass||knnScore<.6||separation<.035||similarity<threshold){
+   resetStability();updateStatus('warn','Resultado incierto',similarity);
+   message('Lectura no concluyente: reposiciona la pieza o añade más muestras representativas.');
+   return
+  }
+  // En modo continuo se exige persistencia de 3 lecturas para minimizar falsos avisos.
+  if(running){
+   if(candidate===cls)streak++;else{candidate=cls;streak=1}
+   if(streak<REQUIRED_STREAK){
+    updateStatus('warn','Verificando '+streak+'/'+REQUIRED_STREAK,similarity);return;
+   }
+  }
+  updateStatus(cls==='ok'?'ok':'ko',cls==='ok'?'CONFORME · OK':'DEFECTO · KO',similarity);
+  // Ventana temporal de deduplicación: requiere separación física/sensor para contar piezas reales.
+  const now=Date.now();
+  if(!running||now-lastCount>=2500){
+   lastCount=now;inspectCount++;if(cls==='ko')badCount++;
+   history.unshift({cls,label:cls==='ko'?'Pieza defectuosa':'Pieza correcta',conf:Math.round(similarity*100),
+    time:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+    image:canvas.toDataURL('image/jpeg',.6)});
+   if(history.length>40)history.pop();updateCounters();renderHistory();
+  }
+  lastStableLabel=cls;frameCounter++;
+ }catch(e){message('Error al inspeccionar: '+e.message);stopContinuous()}
+ finally{busy=false}
+}
+function stopContinuous(){running=false;resetStability();if(continuousTimer){clearTimeout(continuousTimer);continuousTimer=null}updateButtons()}
 function continuousLoop(){if(!running)return;const start=performance.now();scan().finally(()=>{if(running)continuousTimer=setTimeout(continuousLoop,Math.max(0,Number($('interval').value)-(performance.now()-start)))})}
-$('cameraBtn').addEventListener('click',()=>stream?stopCamera():startCamera());$('cameraTop').addEventListener('click',()=>$('cameraBtn').click());$('flipTop').addEventListener('click',()=>$('flipBtn').click());$('addGood').addEventListener('click',()=>addSample('ok'));$('addBad').addEventListener('click',()=>addSample('ko'));$('scanBtn').addEventListener('click',scan);$('continuousBtn').addEventListener('click',()=>{if(running){stopContinuous();return}running=true;updateButtons();continuousLoop()});$('flipBtn').addEventListener('click',async()=>{if(busy)return;const wasRunning=running;stopCamera();facing=facing==='environment'?'user':'environment';await startCamera();if(wasRunning&&stream&&goodSamples>=3&&badSamples>=3){running=true;updateButtons();continuousLoop()}});$('threshold').addEventListener('input',e=>$('thresholdValue').textContent=e.target.value+'%');$('resetTraining').addEventListener('click',()=>{if(!confirm('¿Eliminar todas las muestras de calibración de esta sesión?'))return;stopContinuous();knn?.clearAllClasses();goodSamples=badSamples=0;updateButtons();updateStatus('','Sin calibrar');message('Calibración restablecida.')});$('toggleHistory').addEventListener('click',()=>{const open=$('sheet').classList.toggle('expanded');$('toggleHistory').textContent=open?'Ocultar historial ↓':'Ver historial ↑';$('toggleHistory').setAttribute('aria-expanded',String(open))});document.addEventListener('visibilitychange',()=>{if(document.hidden)stopContinuous()});window.addEventListener('pagehide',stopCamera);if(!isSecure)message('Para acceder a la cámara del iPhone, abre esta página mediante HTTPS.');updateButtons();
+$('cameraBtn').addEventListener('click',()=>stream?stopCamera():startCamera());$('cameraTop').addEventListener('click',()=>$('cameraBtn').click());$('flipTop').addEventListener('click',()=>$('flipBtn').click());$('addGood').addEventListener('click',()=>addSample('ok'));$('addBad').addEventListener('click',()=>addSample('ko'));$('scanBtn').addEventListener('click',scan);$('continuousBtn').addEventListener('click',()=>{if(running){stopContinuous();return}running=true;updateButtons();continuousLoop()});$('flipBtn').addEventListener('click',async()=>{if(busy)return;const wasRunning=running;stopCamera();facing=facing==='environment'?'user':'environment';await startCamera();if(wasRunning&&stream&&goodSamples>=3&&badSamples>=3){running=true;updateButtons();continuousLoop()}});$('threshold').addEventListener('input',e=>$('thresholdValue').textContent=e.target.value+'%');$('resetTraining').addEventListener('click',()=>{if(!confirm('¿Eliminar todas las muestras de calibración de esta sesión?'))return;stopContinuous();knn?.clearAllClasses();referenceVectors.ok.length=0;referenceVectors.ko.length=0;resetStability();goodSamples=badSamples=0;updateButtons();updateStatus('','Sin calibrar');message('Calibración restablecida.')});$('toggleHistory').addEventListener('click',()=>{const open=$('sheet').classList.toggle('expanded');$('toggleHistory').textContent=open?'Ocultar historial ↓':'Ver historial ↑';$('toggleHistory').setAttribute('aria-expanded',String(open))});document.addEventListener('visibilitychange',()=>{if(document.hidden)stopContinuous()});window.addEventListener('pagehide',stopCamera);if(!isSecure)message('Para acceder a la cámara del iPhone, abre esta página mediante HTTPS.');updateButtons();
 })();
 </script></body></html>
