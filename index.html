@@ -516,7 +516,7 @@ function initOperatorUI(){
  u('fixGood').onclick=()=>{u('correctOK').click();hideOperatorVerdict()};
  u('fixBad').onclick=()=>{u('correctKO').click();hideOperatorVerdict()};
  u('closeTurn').onclick=closeTurn;
- u('setPin').hidden=true;
+ // PIN eliminado: no acceder a un botón que ya no existe.
  u('batch').oninput=updateOperator;
  repositionViewer(u('operVideo'));
 }
