@@ -262,3 +262,6 @@
  #operScreen{min-height:0}
  #calViewer{min-height:260px;height:48dvh}
 }
+
+/* Los atributos hidden tienen prioridad sobre las layouts grid/flex. */
+#operScreen[hidden],#superScreen[hidden],#calPane[hidden],#turnPane[hidden],#settingsPane[hidden]{display:none}
