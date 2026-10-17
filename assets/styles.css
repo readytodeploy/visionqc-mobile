@@ -164,3 +164,12 @@
 #viewer[data-context="training"] #result,#viewer[data-context="training"] #defectMarkers{display:none}
 #calPane #calCount{color:#075bb6}
 #calPane #calHelp{color:#566374}
+
+/* Flujo de calibración confirmado y resultados legibles */
+#calPane #calCount{font-size:21px;font-weight:750;line-height:1.25}
+#calPane #calCapture{min-height:64px}
+#calPane #calDone:not([hidden]){display:block;margin:10px 0;width:100%;min-height:54px;background:#e5f2ff;color:#0758a5;border-color:#b3d5fc}
+#verdictPanel{gap:4px}
+#verdictPanel #vText{font-size:clamp(24px,6.5vw,32px);letter-spacing:-.4px}
+#verdictPanel #vScore{font-size:13px;opacity:.9}
+@media(max-width:360px){#verdictPanel #vText{font-size:24px}}
