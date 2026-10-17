@@ -173,3 +173,31 @@
 #verdictPanel #vText{font-size:clamp(24px,6.5vw,32px);letter-spacing:-.4px}
 #verdictPanel #vScore{font-size:13px;opacity:.9}
 @media(max-width:360px){#verdictPanel #vText{font-size:24px}}
+
+/* Visor v5: imagen protagonista, indicadores discretos y acciones independientes. */
+#operVideo{background:#080b10;min-height:0}
+#operVideo .viewer{inset:0;position:absolute;width:100%;height:100%;border:0;border-radius:0;outline:0}
+#operVideo .viewer video{width:100%;height:100%;object-fit:cover}
+#operVideo .viewer .empty{background:#111923;padding:32px 28px}
+#operVideo .viewer .empty b{font-size:20px;font-weight:730;letter-spacing:-.4px}
+#operVideo .viewer .empty p{font-size:14px;max-width:260px}
+#operVideo #cameraContextTag{top:12px;left:12px;background:#153f31;color:#d9ffea;border:1px solid #338763;border-radius:999px;font-size:11px;padding:7px 11px;letter-spacing:.3px}
+#operVideo #cameraContextDetail{display:none}
+#calViewer #cameraContextTag{top:12px;left:12px;background:#113c76;border-color:#4589d6;border-radius:999px;font-size:11px;padding:7px 11px;letter-spacing:.3px}
+#calViewer #cameraContextDetail{top:auto;bottom:12px;left:12px;right:12px;text-align:center;width:auto;max-width:none;background:#121d30;color:#e7f1ff;border:1px solid #334d73;border-radius:12px;padding:9px 12px;font-size:13px}
+#calViewer{height:clamp(290px,46dvh,480px);border-radius:18px;overflow:hidden;border:1px solid #cdd7e3}
+#calViewer .viewer{width:100%;height:100%;outline:0;border:0}
+#calViewer #result,#calViewer #defectMarkers{display:none}
+#verdictPanel{bottom:12px;left:12px;right:12px;border-radius:18px;padding:13px 16px;gap:4px;box-shadow:none}
+#verdictPanel.visible{transform:translateY(0)}
+#verdictPanel #vIcon{font-size:28px}
+#verdictPanel #vText{font-size:clamp(27px,7.5vw,35px);line-height:1.08;font-weight:800}
+#verdictPanel #vScore{font-size:13px;font-weight:650}
+#verdictPanel #fixButtons{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+#verdictPanel #fixButtons button{min-height:54px;border-radius:13px;font-size:15px}
+#operActions{background:#10151d;border-top:1px solid #2b3542;flex:none;padding:10px 16px calc(12px + env(safe-area-inset-bottom))}
+#operStatus{height:34px;background:#10151d;font-size:14px}
+#operPrimary{min-height:62px;border-radius:17px}
+#operMissing{bottom:16px;left:16px;right:16px}
+#viewer #defectMarkers .defectMarker{width:36px;height:36px;border-width:2px;font-size:18px;background:#d21c1830}
+@media(orientation:landscape) and (max-height:570px){#calViewer{height:55dvh}#verdictPanel{bottom:7px;padding:7px 12px}#verdictPanel #vIcon{font-size:22px}#verdictPanel #vText{font-size:26px}#verdictPanel #fixButtons button{min-height:44px}}
