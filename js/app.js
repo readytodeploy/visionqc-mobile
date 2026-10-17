@@ -320,7 +320,19 @@ async function verifyPin(){const pin=u('pinInput').value;if(!/^\d{4}$/.test(pin)
  if(!saved||uiPinIntent==='change'){const salt=crypto.randomUUID?.()||String(Date.now());localStorage.setItem('vqc_super_pin',JSON.stringify({salt,hash:await pinHash(pin,salt)}));u('pinOverlay').hidden=true;if(uiPinIntent==='unlock')showSupervisor('cal');return}
  if(await pinHash(pin,saved.salt)===saved.hash){u('pinOverlay').hidden=true;showSupervisor('cal')}else u('pinMessage').textContent='PIN incorrecto.';
 }
-function repositionViewer(target){target.append(u('viewer'));requestAnimationFrame(async()=>{if(st.stream){try{const v=u('video');if(v.srcObject!==st.stream)v.srcObject=st.stream;await v.play();u('empty').hidden=true}catch(e){u('operStatus').textContent='Pulsa activar cámara para reanudar'}}drawGuide()})}
+/* Contexto visible al compartir la cámara entre entrenamiento y producción. */
+function setCameraContext(training){
+ const viewer=u('viewer');if(!viewer)return;
+ viewer.dataset.context=training?'training':'inspection';
+ let tag=u('cameraContextTag');
+ if(!tag){tag=document.createElement('div');tag.id='cameraContextTag';tag.setAttribute('aria-live','polite');viewer.append(tag)}
+ tag.textContent=training?'◎ ENTRENAMIENTO':'● INSPECCIÓN';
+ let detail=u('cameraContextDetail');
+ if(!detail){detail=document.createElement('div');detail.id='cameraContextDetail';viewer.append(detail)}
+ if(!training)detail.textContent='Producción · Captura real';
+ else detail.textContent='Muestra para calibración · No cuenta como producción';
+}
+function repositionViewer(target){setCameraContext(target.id==='calViewer');target.append(u('viewer'));requestAnimationFrame(async()=>{if(st.stream){try{const v=u('video');if(v.srcObject!==st.stream)v.srcObject=st.stream;await v.play();u('empty').hidden=true}catch(e){u('operStatus').textContent='Pulsa activar cámara para reanudar'}}drawGuide()})}
 function showSupervisor(pane){stopAuto();u('operScreen').hidden=true;u('superScreen').hidden=false;u('accessMenu').hidden=true;setSupervisorPane(pane)}
 function leaveSupervisor(){u('superScreen').hidden=true;u('operScreen').hidden=false;repositionViewer(u('operVideo'));updateOperator()}
 function setSupervisorPane(pane){uiPane=pane;for(const [key,id] of [['cal','calPane'],['turn','turnPane'],['settings','settingsPane']])u(id).hidden=key!==pane;document.querySelectorAll('[data-pane]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===pane)));if(pane==='cal')repositionViewer(u('calViewer'));updateCalibrationWizard()}
@@ -328,6 +340,7 @@ function updateCalibrationWizard(){
  if(uiPane!=='cal')return;const bg=count('bg'),ok=count('ok'),ko=count('ko'),n=needs(),minOK=referenceEnabled()?1:n.ok,stage=!bg?0:ok<minOK?1:ko<n.ko&&!patchEnabled()&&!referenceEnabled()?2:3;
  [...u('calSteps').children].forEach((x,i)=>x.classList.toggle('active',i===Math.min(stage,2)));
  u('calCount').textContent=stage===0?'Registrar fondo':stage===1?ok+' de '+(referenceEnabled()?1:n.ok):stage===2?ko+' de '+n.ko:'Listo para producir ✓';
+ if(u('cameraContextDetail')&&uiPane==='cal')u('cameraContextDetail').textContent=stage===0?'ENTRENAR · Fondo vacío':stage===1?'ENTRENAR · Guardar pieza buena':stage===2?'ENTRENAR · Guardar pieza defectuosa':'Calibración completada';
  u('calHelp').textContent=stage===0?'Retira las piezas.':stage===1?(referenceEnabled()?'Fotografía el producto correcto. Añade más referencias desde otros ángulos cuando quieras.':'Coloca una pieza buena desde distintos ángulos.'):stage===2?'Coloca una pieza defectuosa.':'Puedes empezar a inspeccionar.';
  u('calFill').style.width=(stage===0?0:stage===1?10+45*ok/(referenceEnabled()?1:n.ok):stage===2?55+45*ko/n.ko:100)+'%';
  u('calCapture').textContent=!st.stream?'Activar cámara':!st.model?'Cargando IA…':stage===3?'Volver al visor':'Capturar muestra';
