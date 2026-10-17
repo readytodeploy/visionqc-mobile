@@ -48,7 +48,7 @@
 #legacyHost{display:none}#superSettings details{margin-top:10px}#superSettings summary{min-height:48px;padding:12px;color:var(--fg);font-weight:700}
 #accessMenu{position:fixed;top:calc(52px + env(safe-area-inset-top));right:12px;background:#273141;border:1px solid #566273;border-radius:15px;padding:8px;z-index:50}#accessMenu button{background:none;color:white;min-height:48px;padding:8px 20px}
 #pinOverlay{position:fixed;inset:0;z-index:80;background:#0b1018;display:grid;place-items:center;padding:20px}#pinBox{background:#202938;border-radius:20px;padding:24px;width:min(100%,390px)}#pinBox h2{font-size:27px;margin:0}#pinBox p{font-size:15px;color:#d0d9e5}#pinBox input{width:100%;height:64px;text-align:center;font-size:31px;letter-spacing:8px;background:#111824;color:white;border:1px solid #748196;border-radius:15px;margin:15px 0}
-#pinOverlay[hidden],#accessMenu[hidden]{display:none}
+#pinOverlay[hidden],#accessMenu[hidden],#operScreen[hidden],#superScreen[hidden],#operMissing[hidden],#fixButtons[hidden],#calPane[hidden],#turnPane[hidden],#settingsPane[hidden]{display:none}
 #toast{position:fixed;z-index:60;top:calc(60px + env(safe-area-inset-top));left:12px;right:12px;background:#2c3542;color:#fff;padding:13px;border-radius:13px}
 @media(orientation:landscape) and (max-height:570px){#verdictPanel{height:85%;min-height:145px}#vIcon{font-size:45px}#vText{font-size:48px}#operActions{padding-top:4px}.segment{margin-bottom:4px}}
 @media(prefers-reduced-motion:reduce){*{transition:none;animation:none}}
@@ -416,8 +416,8 @@ function initOperatorUI(){
  u('settingsPane').append(u('cameraCard'));
  const advanced=document.createElement('details');advanced.className='card';advanced.innerHTML='<summary>Avanzado</summary>';
  for(const id of ['autoThreshold','minSimilarity','minMargin','validation']){const el=u(id);if(el)advanced.append(el.closest('.field')||el)}
- u('settingsPane').append(advanced,u('training'),u('soundBtn'),u('themeBtn'),u('flipBtn'));
- u('training').hidden=false;
+ u('settingsPane').append(advanced,u('soundBtn'),u('themeBtn'),u('flipBtn'));u('calPane').append(u('training'));u('training').hidden=true;
+ u('training').hidden=true;
  u('operMenu').onclick=()=>u('accessMenu').hidden=!u('accessMenu').hidden;
  u('accessSupervisor').onclick=requestSupervisor;
  u('goSuper').onclick=requestSupervisor;
