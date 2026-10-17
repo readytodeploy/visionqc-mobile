@@ -365,7 +365,7 @@ async function undoCal(){const list=st.records.filter(r=>!r.synthetic);const las
 function closeTurn(){if(!confirm('¿Cerrar turno y reiniciar contadores?'))return;const shifts=JSON.parse(localStorage.getItem('vqc_turns')||'[]');shifts.push({at:new Date().toISOString(),...loadCounts(),batch:u('batch').value});localStorage.setItem('vqc_turns',JSON.stringify(shifts));localStorage.setItem(COUNTS_KEY,JSON.stringify({n:0,ko:0}));st.count=st.koCount=0;refresh()}
 /* Dataset de ejemplo: entrenar solo partición train, evaluar test sin fuga de datos. */
 async function importDemoDataset(file){
- if(!st.model){toast('Activa la cámara y espera la carga del modelo antes de importar el ejemplo.');return}
+ if(!st.model){await modelLoad();if(!st.model){toast('No se pudo cargar el modelo. Comprueba la conexión a internet.');return}}
  if(st.busy)return;st.busy=true;
  const status=u('demoImportStatus');let trained=0,testing=[];
  try{
