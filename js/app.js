@@ -363,6 +363,51 @@ function updateCalibrationWizard(){
 async function captureCal(){if(!st.stream){await startCamera();return}if(!st.model){await modelLoad();return}const n=needs(),minOK=referenceEnabled()?1:n.ok,label=!count('bg')?'bg':count('ok')<minOK?'ok':count('ko')<n.ko&&!patchEnabled()&&!referenceEnabled()?'ko':null;if(!label){approveTraining();return}u('calCapture').disabled=true;try{await add(label)}finally{u('calCapture').disabled=false;updateCalibrationWizard()}}
 async function undoCal(){const list=st.records.filter(r=>!r.synthetic);const last=list[list.length-1];if(!last)return;await transaction(STORE,'readwrite',o=>o.delete(last.id));st.records=st.records.filter(r=>r.id!==last.id);st.validationKey='';if(last.label==='bg')st.bgTiny=null;refresh()}
 function closeTurn(){if(!confirm('¿Cerrar turno y reiniciar contadores?'))return;const shifts=JSON.parse(localStorage.getItem('vqc_turns')||'[]');shifts.push({at:new Date().toISOString(),...loadCounts(),batch:u('batch').value});localStorage.setItem('vqc_turns',JSON.stringify(shifts));localStorage.setItem(COUNTS_KEY,JSON.stringify({n:0,ko:0}));st.count=st.koCount=0;refresh()}
+/* Dataset de ejemplo: entrenar solo partición train, evaluar test sin fuga de datos. */
+async function importDemoDataset(file){
+ if(!st.model){toast('Activa la cámara y espera la carga del modelo antes de importar el ejemplo.');return}
+ if(st.busy)return;st.busy=true;
+ const status=u('demoImportStatus');let trained=0,testing=[];
+ try{
+  const data=JSON.parse(await file.text());
+  if(data.format!=='visionqc-demo-dataset'||data.version!==1||!Array.isArray(data.images)||data.images.length>150)throw Error('Formato de dataset incorrecto.');
+  const entries=data.images;
+  if(!entries.every(x=>['ok','ko'].includes(x.label)&&['train','test'].includes(x.split)&&typeof x.image==='string'&&x.image.startsWith('data:image/jpeg;base64,')))throw Error('Imágenes o etiquetas inválidas.');
+  const hashes=new Set();
+  const samples=[];
+  for(const x of entries){
+   if(hashes.has(x.hash))continue;hashes.add(x.hash);
+   const img=new Image();img.src=x.image;await img.decode();
+   const canvas=document.createElement('canvas');canvas.width=canvas.height=448;
+   const ctx=canvas.getContext('2d');ctx.fillStyle='#d8d8d8';ctx.fillRect(0,0,448,448);
+   const scale=Math.min(448/img.width,448/img.height);const w=img.width*scale,h=img.height*scale;
+   ctx.drawImage(img,(448-w)/2,(448-h)/2,w,h);
+   const emb=embedding(canvas);samples.push({x,emb});
+   status.textContent='Procesando imagen '+samples.length+' / '+entries.length;
+   await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  if(!samples.some(p=>p.x.split==='train'&&p.x.label==='ok')||!samples.some(p=>p.x.split==='train'&&p.x.label==='ko'))throw Error('Necesita imágenes OK y KO de entrenamiento.');
+  // Evaluar contra esta importación exclusivamente, sin contaminación de calibraciones previas.
+  const training=samples.filter(p=>p.x.split==='train').map(p=>({id:p.x.hash,label:p.x.label,emb:p.emb}));
+  testing=samples.filter(p=>p.x.split==='test');
+  let correct=0;let matrix={tp:0,fp:0,fn:0,tn:0};
+  for(const t of testing){
+   const prediction=classify(t.emb,training);const label=prediction.label;
+   if(label===t.x.label)correct++;
+   if(t.x.label==='ko'&&label==='ko')matrix.tp++;
+   else if(t.x.label==='ok'&&label==='ko')matrix.fp++;
+   else if(t.x.label==='ko')matrix.fn++;else matrix.tn++;
+  }
+  for(const p of samples.filter(p=>p.x.split==='train')){
+   await storeRecord({id:id(),label:p.x.label,emb:p.emb,thumb:p.x.image,at:Date.now(),synthetic:false,demo:true});
+   trained++;
+  }
+  localStorage.setItem('vqc_demo_mode','1');
+  status.textContent='Ejemplo importado: '+trained+' entrenamiento, '+testing.length+' prueba. Aciertos en prueba: '+correct+'/'+testing.length+'. TP '+matrix.tp+', FP '+matrix.fp+', FN '+matrix.fn+', TN '+matrix.tn+'. Sin validación industrial.';
+  toast('Dataset cargado. Para inspección en vivo registra un fondo vacío y confirma la calibración.');
+ }catch(e){status.textContent='No se pudo importar: '+e.message}
+ finally{st.busy=false;refresh()}
+}
 function initOperatorUI(){
  // El veredicto debe vivir dentro del visor y empezar oculto.
  u('operVideo').append(u('verdictPanel'));hideOperatorVerdict();
@@ -380,6 +425,10 @@ function initOperatorUI(){
  for(const id of ['targetOK','targetKO','augmentation']){const el=u(id);trainSettings.append(el.closest('.field'))}
  const help=document.createElement('p');help.className='muted';help.textContent='Define las imágenes necesarias por clase. Usa distintos ángulos, acercamientos y defectos.';trainSettings.append(help);
  u('settingsContent').prepend(trainSettings);
+ const demoCard=document.createElement('div');demoCard.className='card';
+ demoCard.innerHTML='<h2>Dataset de demostración</h2><p class="muted">Importa el archivo JSON de EXEMPLOS. Las imágenes de evaluación nunca se usan para entrenar. No sustituye la captura de fondo para usar la cámara.</p><input id="demoFile" type="file" accept=".json,application/json" aria-label="Seleccionar dataset de ejemplo"><p id="demoImportStatus" class="muted" role="status">Sin dataset de ejemplo importado</p>';
+ u('settingsContent').prepend(demoCard);
+ u('demoFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(file)await importDemoDataset(file);e.target.value=''});
  const referenceBox=document.createElement('div');referenceBox.className='card';
  referenceBox.innerHTML='<h2>Referencia OK · Sin dataset KO</h2><p class="muted">Utiliza una imagen buena como referencia inicial y detecta diferencias locales. Para más fiabilidad, registra varios ángulos. Los resultados con una sola foto son experimentales.</p><div class="field"><label for="referenceMode">Activar referencia OK</label><input type="checkbox" id="referenceMode"></div><div class="field"><label for="referenceSensitivity">Sensibilidad</label><select id="referenceSensitivity"><option value="0.85">Alta</option><option value="1">Equilibrada</option><option value="1.25">Conservadora</option></select></div><p class="muted">El fondo vacío sigue siendo necesario. No requiere ejemplos KO.</p>';
  u('settingsContent').prepend(referenceBox);
