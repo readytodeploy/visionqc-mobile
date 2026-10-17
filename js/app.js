@@ -172,8 +172,10 @@ async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=
   const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0,c.width,c.height);
   const data=await window.VQCRoboflow.infer(c,Number(u('remoteConfidence').value));
   const label=data.predictions.length?'ko':'uncertain',score=data.predictions.length?Math.max(...data.predictions.map(p=>p.confidence)):null;
-  showRemoteBoxes(data.predictions,data.image);
+  showRemoteBoxes(data.predictions,data.image,c);
   newResult(label,score,data.predictions.length?data.predictions.map(p=>p.class).join(', '):'Sin defectos detectados; confirmar visualmente');
+ showRemoteSummary(data.predictions,c);
+ if(u('inspectAgain'))u('inspectAgain').hidden=false;
   if(!auto){bump(label);await storeHistory({id:id(),at:Date.now(),label,score:score||0,batch:$('batch').value,operator:$('operator').value,thumb:c.toDataURL('image/jpeg',.55),error:false})}
   return;
  }
@@ -313,10 +315,31 @@ new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('vi
 /* Interfaz Operario/Supervisor separada de los cálculos de visión. */
 let uiMode='manual',uiPinIntent='unlock',uiPane='cal';
 function u(id){return document.getElementById(id)}
-function hideOperatorVerdict(){clearDefectMarkers();const p=u('verdictPanel');p.classList.remove('visible','ko','uncertain');p.hidden=true}
+function hideOperatorVerdict(){
+ clearDefectMarkers();
+ const snap=u('inspectionSnapshot');if(snap)snap.remove();
+ const p=u('verdictPanel');p.classList.remove('visible','ko','uncertain');p.hidden=true;
+ if(u('inspectAgain'))u('inspectAgain').hidden=true;
+ const primary=u('operPrimary');if(primary&&!st.busy&&!st.auto&&st.stream)primary.textContent='Inspeccionar pieza';
+}
+function resetManualInspection(){
+ if(st.busy)return;
+ hideOperatorVerdict();
+ if(u('operStatus'))u('operStatus').textContent='Coloca la siguiente pieza';
+ updateOperator();
+}
 /* Map detection cells from normalized product coordinates to the actual viewer ROI.
    Indicators show suspicious image regions, not verified defect boundaries. */
-function showRemoteBoxes(predictions,image){
+function showRemoteBoxes(predictions,image,snapshot){
+ const previous=u('inspectionSnapshot');if(previous)previous.remove();
+ const viewer=u('viewer');
+ if(snapshot){
+  const img=new Image();img.id='inspectionSnapshot';img.className='inspectionSnapshot';
+  img.src=snapshot.toDataURL('image/jpeg',.93);
+  img.alt='Fotografía congelada utilizada para analizar los defectos';
+  viewer.append(img);
+ }
+
  const v=u('viewer');let layer=u('remoteBoxes');
  if(!layer){layer=document.createElement('div');layer.id='remoteBoxes';layer.className='remoteBoxes';v.append(layer)}
  layer.replaceChildren();
@@ -326,7 +349,43 @@ function showRemoteBoxes(predictions,image){
  const ix=vw/(image.width||vw),iy=vh/(image.height||vh);
  box.style.left=(offX+(p.x-p.width/2)*ix*scale)+'px';box.style.top=(offY+(p.y-p.height/2)*iy*scale)+'px';
  box.style.width=(p.width*ix*scale)+'px';box.style.height=(p.height*iy*scale)+'px';
- box.textContent=p.class+' '+Math.round(p.confidence*100)+'%';layer.append(box)}
+ box.textContent=p.class+' · '+Math.round(p.confidence*100)+'%';box.title='Ampliar defecto: '+p.class;layer.append(box)}
+}
+function showRemoteSummary(predictions,canvas){
+ let summary=u('remoteSummary');
+ if(!summary){summary=document.createElement('div');summary.id='remoteSummary';u('verdictPanel').append(summary)}
+ summary.replaceChildren();
+ if(!predictions.length){
+  const msg=document.createElement('p');msg.textContent='No se localizaron defectos. Revisa la pieza antes de aceptarla.';summary.append(msg);return;
+ }
+ const title=document.createElement('strong');title.textContent=predictions.length+' defecto(s) detectado(s)';summary.append(title);
+ const grid=document.createElement('div');grid.className='remoteDefects';summary.append(grid);
+ for(const p of predictions.slice().sort((a,b)=>b.confidence-a.confidence).slice(0,6)){
+  const button=document.createElement('button');button.type='button';button.className='remoteDefectItem';
+  const thumb=document.createElement('canvas');thumb.width=96;thumb.height=96;
+  const boxSize=Math.max(p.width,p.height)*1.65;
+  const sx=Math.max(0,Math.min(canvas.width-boxSize,p.x-boxSize/2)),sy=Math.max(0,Math.min(canvas.height-boxSize,p.y-boxSize/2));
+  const sw=Math.min(boxSize,canvas.width-sx),sh=Math.min(boxSize,canvas.height-sy);
+  if(sw>0&&sh>0)thumb.getContext('2d').drawImage(canvas,sx,sy,sw,sh,0,0,96,96);
+  const text=document.createElement('span');text.textContent=p.class+' · '+Math.round(p.confidence*100)+'%';
+  button.append(thumb,text);button.onclick=()=>showDefectZoom(canvas,p);grid.append(button);
+ }
+}
+function showDefectZoom(canvas,p){
+ let dialog=u('defectZoom');
+ if(!dialog){dialog=document.createElement('dialog');dialog.id='defectZoom';dialog.className='defectZoom';
+  const image=document.createElement('canvas');image.width=image.height=360;
+  const close=document.createElement('button');close.type='button';close.textContent='Cerrar';close.onclick=()=>dialog.close();
+  const label=document.createElement('p');label.id='defectZoomLabel';
+  dialog.append(label,image,close);document.body.append(dialog);
+ }
+ const size=Math.max(45,Math.max(p.width,p.height)*2.2);
+ const sx=Math.max(0,Math.min(canvas.width-size,p.x-size/2)),sy=Math.max(0,Math.min(canvas.height-size,p.y-size/2));
+ const sw=Math.min(size,canvas.width-sx),sh=Math.min(size,canvas.height-sy);
+ const target=dialog.querySelector('canvas'),ctx=target.getContext('2d');
+ ctx.clearRect(0,0,360,360);if(sw>0&&sh>0)ctx.drawImage(canvas,sx,sy,sw,sh,0,0,360,360);
+ u('defectZoomLabel').textContent=p.class+' · Confianza '+Math.round(p.confidence*100)+'%';
+ dialog.showModal();
 }
 function clearDefectMarkers(){const remote=u('remoteBoxes');if(remote)remote.replaceChildren();const layer=document.getElementById('defectMarkers');if(layer)layer.replaceChildren()}
 function drawDefectMarkers(detail){
@@ -350,7 +409,7 @@ function presentOperatorVerdict(label,score){
  u('vIcon').textContent=label==='ok'?'✓':label==='ko'?'✕':'?';
  u('vText').textContent=label==='ok'?'CORRECTA':label==='ko'?'DEFECTUOSA':'NO RECONOCIDA';
  u('vScore').textContent=remoteEnabled()?(score===null?'Sin defectos detectados; requiere verificación':'Confianza de detección · '+Math.round(score*100)+'%'):score===null?'Sin puntuación suficiente':'Similitud estimada · '+Math.round(Math.max(0,Math.min(1,score))*100)+'%';
- u('fixButtons').hidden=label!=='uncertain';u('gameHint').hidden=label!=='uncertain';
+ u('fixButtons').hidden=label!=='uncertain'||remoteEnabled();u('gameHint').hidden=label!=='uncertain'||remoteEnabled();if(u('remoteSummary')&&!remoteEnabled())u('remoteSummary').replaceChildren();
  u('operStatus').textContent=label==='uncertain'?'Confirma el resultado':st.auto?'Quita la pieza':'Retira la pieza';
  if(navigator.vibrate)navigator.vibrate(label==='ko'?[80,60,80]:[40]);
 }
@@ -358,7 +417,7 @@ function remoteEnabled(){return localStorage.getItem('vqc_detection_provider')==
 function updateOperator(){
  u('lotName').textContent=u('batch').value||'Sin lote';
  u('shiftNumbers').textContent=count('ok')===0&&count('ko')===0&&count('bg')===0?'Sin calibrar':st.count+' · '+st.koCount+' KO';
- u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Confirmar calibración':st.auto?'Detener inspección':uiMode==='automatic'?'Iniciar automático':'Inspeccionar pieza';
+ u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Confirmar calibración':st.auto?'Detener inspección':u('verdictPanel')&&!u('verdictPanel').hidden?'Nueva inspección':uiMode==='automatic'?'Iniciar automático':'Inspeccionar pieza';
  u('operMissing').hidden=remoteEnabled()||!st.stream||ready();if(st.stream&&!ready()&&!remoteEnabled())u('operStatus').textContent=calibrationComplete()?'Confirma el entrenamiento en Supervisor':'Calibración pendiente';
  u('modoManual').setAttribute('aria-pressed',String(uiMode==='manual'));
  u('modoAuto').setAttribute('aria-pressed',String(uiMode==='automatic'));
@@ -511,7 +570,8 @@ function initOperatorUI(){
  document.querySelectorAll('[data-pane]').forEach(b=>b.onclick=()=>setSupervisorPane(b.dataset.pane));
  u('modoManual').onclick=()=>{uiMode='manual';if(st.auto)stopAuto();updateOperator()};
  u('modoAuto').onclick=()=>{if(remoteEnabled()){toast('Roboflow está disponible solo en modo manual.');return}uiMode='automatic';updateOperator()};
- u('operPrimary').onclick=async()=>{if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){if(remoteEnabled()){toast('El modelo Roboflow funciona en modo manual.');return}startAuto();return}u('operStatus').textContent='Analizando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
+ u('operPrimary').onclick=async()=>{if(st.stream&&!u('verdictPanel').hidden){resetManualInspection();return}if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){if(remoteEnabled()){toast('El modelo Roboflow funciona en modo manual.');return}startAuto();return}u('operStatus').textContent='Analizando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
+ const again=document.createElement('button');again.type='button';again.id='inspectAgain';again.className='inspectAgain';again.textContent='Nueva inspección';again.hidden=true;again.onclick=resetManualInspection;u('verdictPanel').append(again);
  u('calCapture').onclick=captureCal;u('calUndo').onclick=undoCal;u('calDone').onclick=approveTraining;
  u('fixGood').onclick=()=>{u('fixGood').classList.add('chosen');u('correctOK').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
  u('fixBad').onclick=()=>{u('fixBad').classList.add('chosen');u('correctKO').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
