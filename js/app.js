@@ -153,6 +153,7 @@ async function burst(mode='piece'){
 }
 async function add(cls){if(st.busy||!st.model)return;st.busy=true;refresh();try{const result=await burst(cls==='bg'?'bg':'piece'),similar=diversity(cls,result.emb);await storeRecord({id:id(),label:cls,emb:result.emb,thumb:result.thumb,at:Date.now(),synthetic:false});if(cls==='bg')st.bgTiny=tiny(result.canvas);if($('augmentation').checked&&cls!=='bg'){for(const emb of augmented(result.canvas))await storeRecord({id:id(),label:cls,emb,thumb:'',at:Date.now(),synthetic:true})}toast(similar||(cls==='bg'?'Fondo guardado. Los fondos lisos se aceptan sin exigir nitidez.':'Muestra registrada correctamente.'));flash(cls)}catch(e){toast('Captura descartada: '+e.message)}finally{st.busy=false;refresh()}}
 async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=true;try{const result=pre||await burst(),prediction=predictionFor(result.emb),sim=Number($('minSimilarity').value),margin=Number($('minMargin').value);
+ clearDefectMarkers();
  if(referenceEnabled()&&$('localDetails')?.checked&&window.VQCVision){
   const detail=await window.VQCVision.analyze(result.canvas,st.records,{sensitivity:$('detailSensitivity').value,maxDifference:$('viewTolerance').value});
   if(detail.state==='uncertain'){clearDefectMarkers();prediction.label='uncertain';prediction.reason=detail.reason}
