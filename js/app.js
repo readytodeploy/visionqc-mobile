@@ -135,7 +135,7 @@ function approveTraining(){
  u('operStatus').textContent='Listo para inspeccionar';
 }
 function calibrationComplete(){return !!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
-function ready(){return approvalValid()&&!!st.stream&&!!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
+function ready(){if(remoteEnabled())return !!st.stream;return approvalValid()&&!!st.stream&&!!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
 function refresh(){const n=needs(),o=count('ok'),k=count('ko'),b=count('bg');$('okN').textContent=`${o} / ${n.ok}`;$('koN').textContent=`${k} / ${n.ko}`;$('okBar').style.width=Math.min(100,o/n.ok*100)+'%';$('koBar').style.width=Math.min(100,k/n.ko*100)+'%';$('trainingBadge').textContent=`${o+k} piezas · ${b?'Fondo ✓':'Fondo pendiente'}`;const stage=!st.stream?1:!ready()?2:3; if(patchEnabled()){buildPatchBank();$('patchStatus').textContent='PatchCore Lite · '+patchState.referenceCount+' muestras OK · '+patchState.bank.length+' parches · Umbral '+patchState.threshold.toFixed(3);}$('stepLabel').textContent=`PASO ${stage} / 3`;$('stepText').textContent=stage===1?'Activar cámara':stage===2?'Calibrar IA':'Inspeccionar piezas';$('stepProgress').style.width=(stage===1?0:stage===2?33+57*Math.min(o/n.ok,k/n.ko):100)+'%';$('mainBtn').textContent=!st.stream?'Activar cámara':!st.model?'Cargando modelo…':!ready()?'Calibrar piezas':'Capturar pieza';$('mainBtn').disabled=!!st.stream&&!st.model;$('autoBtn').disabled=!ready();$('autoBtn').textContent=st.auto?'■ Detener':'▶ Auto';$('addOK').disabled=$('addKO').disabled=$('backgroundBtn').disabled=!st.model||!st.stream||st.busy;$('coach').textContent=patchEnabled()?(!b?'Captura primero el fondo sin piezas.':o<3?'Registra al menos tres piezas OK desde ángulos y distancias variados.':'Banco PatchCore Lite listo; añade más muestras OK para mejorar la cobertura del producto.'):(!b?'Captura el fondo sin piezas; después añade diferentes ejemplos OK y KO.':o<n.ok||k<n.ko?'Captura el mismo producto de frente, lados, distintas distancias y con defectos localizados. Mantén fondo e iluminación controlados.':'Calibración completada. Comprueba la matriz y utiliza piezas nunca vistas para validar.');validation();historyUI();updateCalibrationCamera()}
 async function modelLoad(){if(st.model||st.loading)return;st.loading=true;$('cameraState').textContent='Cargando IA · 15%';try{if(!window.tf||!window.mobilenet)throw Error('Sin acceso a las bibliotecas CDN. Comprueba la conexión y reintenta.');await tf.ready();$('cameraState').textContent='Cargando modelo · 45%';st.model=await mobilenet.load({version:2,alpha:1});$('cameraState').textContent='Optimizando · 85%';const blank=document.createElement('canvas');blank.width=blank.height=224;const t=st.model.infer(blank,true);await t.data();t.dispose();$('cameraState').textContent='● Cámara e IA listas';refresh()}catch(e){toast(e.message+' Pulsa Activar cámara para reintentar.')}finally{st.loading=false;refresh()}}
 /* [MEJORA-11] Permisos HTTPS, cámara iOS y controles condicionales de capacidades. */
@@ -166,7 +166,18 @@ async function burst(mode='piece'){
  return {emb:aggregate(vectors),thumb:dataURI(lastCanvas),canvas:lastCanvas};
 }
 async function add(cls){if(st.busy||!st.model)return;st.busy=true;refresh();try{const result=await burst(cls==='bg'?'bg':'piece'),similar=diversity(cls,result.emb);await storeRecord({id:id(),label:cls,emb:result.emb,thumb:result.thumb,at:Date.now(),synthetic:false});if(cls==='bg')st.bgTiny=tiny(result.canvas);if($('augmentation').checked&&cls!=='bg'){for(const emb of augmented(result.canvas))await storeRecord({id:id(),label:cls,emb,thumb:'',at:Date.now(),synthetic:true})}toast(similar||(cls==='bg'?'Fondo guardado. Los fondos lisos se aceptan sin exigir nitidez.':'Muestra registrada correctamente.'));flash(cls)}catch(e){toast('Captura descartada: '+e.message)}finally{st.busy=false;refresh()}}
-async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=true;try{const result=pre||await burst(),prediction=predictionFor(result.emb),sim=Number($('minSimilarity').value),margin=Number($('minMargin').value);
+async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=true;try{
+ if(remoteEnabled()){
+  const video=$('video');if(video.readyState<2)throw new Error('Espera a que la cámara muestre imagen.');
+  const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0,c.width,c.height);
+  const data=await window.VQCRoboflow.infer(c,Number(u('remoteConfidence').value));
+  const label=data.predictions.length?'ko':'ok',score=data.predictions.length?Math.max(...data.predictions.map(p=>p.confidence)):null;
+  showRemoteBoxes(data.predictions,data.image);
+  newResult(label,score,data.predictions.length?data.predictions.map(p=>p.class).join(', '):'Ningún defecto detectado');
+  if(!auto){bump(label);await storeHistory({id:id(),at:Date.now(),label,score:score||0,batch:$('batch').value,operator:$('operator').value,thumb:c.toDataURL('image/jpeg',.55),error:false})}
+  return;
+ }
+const result=pre||await burst(),prediction=predictionFor(result.emb),sim=Number($('minSimilarity').value),margin=Number($('minMargin').value);
  clearDefectMarkers();
  if(referenceEnabled()&&$('localDetails')?.checked&&window.VQCVision){
   const detail=await window.VQCVision.analyze(result.canvas,st.records,{sensitivity:$('detailSensitivity').value,maxDifference:$('viewTolerance').value});
@@ -305,7 +316,19 @@ function u(id){return document.getElementById(id)}
 function hideOperatorVerdict(){clearDefectMarkers();const p=u('verdictPanel');p.classList.remove('visible','ko','uncertain');p.hidden=true}
 /* Map detection cells from normalized product coordinates to the actual viewer ROI.
    Indicators show suspicious image regions, not verified defect boundaries. */
-function clearDefectMarkers(){const layer=document.getElementById('defectMarkers');if(layer)layer.replaceChildren()}
+function showRemoteBoxes(predictions,image){
+ const v=u('viewer');let layer=u('remoteBoxes');
+ if(!layer){layer=document.createElement('div');layer.id='remoteBoxes';layer.className='remoteBoxes';v.append(layer)}
+ layer.replaceChildren();
+ const video=u('video'),w=v.clientWidth,h=v.clientHeight,vw=video.videoWidth||image.width,vh=video.videoHeight||image.height;
+ const scale=Math.max(w/vw,h/vh),offX=(w-vw*scale)/2,offY=(h-vh*scale)/2;
+ for(const p of predictions){const box=document.createElement('div');box.className='remoteBox';
+ const ix=vw/(image.width||vw),iy=vh/(image.height||vh);
+ box.style.left=(offX+(p.x-p.width/2)*ix*scale)+'px';box.style.top=(offY+(p.y-p.height/2)*iy*scale)+'px';
+ box.style.width=(p.width*ix*scale)+'px';box.style.height=(p.height*iy*scale)+'px';
+ box.textContent=p.class+' '+Math.round(p.confidence*100)+'%';layer.append(box)}
+}
+function clearDefectMarkers(){const remote=u('remoteBoxes');if(remote)remote.replaceChildren();const layer=document.getElementById('defectMarkers');if(layer)layer.replaceChildren()}
 function drawDefectMarkers(detail){
  const viewer=document.getElementById('viewer');if(!viewer||!detail?.box||!detail.regions?.length)return;
  let layer=document.getElementById('defectMarkers');
@@ -326,16 +349,17 @@ function presentOperatorVerdict(label,score){
  p.hidden=false;p.className='visible'+(label==='ko'?' ko':label==='uncertain'?' uncertain':'');
  u('vIcon').textContent=label==='ok'?'✓':label==='ko'?'✕':'?';
  u('vText').textContent=label==='ok'?'CORRECTA':label==='ko'?'DEFECTUOSA':'NO RECONOCIDA';
- u('vScore').textContent=score===null?'Sin puntuación suficiente':'Similitud estimada · '+Math.round(Math.max(0,Math.min(1,score))*100)+'%';
+ u('vScore').textContent=remoteEnabled()?(score===null?'Sin defectos detectados; requiere verificación':'Confianza de detección · '+Math.round(score*100)+'%'):score===null?'Sin puntuación suficiente':'Similitud estimada · '+Math.round(Math.max(0,Math.min(1,score))*100)+'%';
  u('fixButtons').hidden=label!=='uncertain';u('gameHint').hidden=label!=='uncertain';
  u('operStatus').textContent=label==='uncertain'?'Confirma el resultado':st.auto?'Quita la pieza':'Retira la pieza';
  if(navigator.vibrate)navigator.vibrate(label==='ko'?[80,60,80]:[40]);
 }
+function remoteEnabled(){return localStorage.getItem('vqc_detection_provider')==='roboflow'}
 function updateOperator(){
  u('lotName').textContent=u('batch').value||'Sin lote';
  u('shiftNumbers').textContent=count('ok')===0&&count('ko')===0&&count('bg')===0?'Sin calibrar':st.count+' · '+st.koCount+' KO';
  u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Confirmar calibración':st.auto?'Detener inspección':uiMode==='automatic'?'Iniciar automático':'Inspeccionar pieza';
- u('operMissing').hidden=!st.stream||ready();if(st.stream&&!ready())u('operStatus').textContent=calibrationComplete()?'Confirma el entrenamiento en Supervisor':'Calibración pendiente';
+ u('operMissing').hidden=remoteEnabled()||!st.stream||ready();if(st.stream&&!ready()&&!remoteEnabled())u('operStatus').textContent=calibrationComplete()?'Confirma el entrenamiento en Supervisor':'Calibración pendiente';
  u('modoManual').setAttribute('aria-pressed',String(uiMode==='manual'));
  u('modoAuto').setAttribute('aria-pressed',String(uiMode==='automatic'));
  if(!u('superScreen').hidden)updateCalibrationWizard();
@@ -440,6 +464,13 @@ function initOperatorUI(){
  for(const id of ['targetOK','targetKO','augmentation']){const el=u(id);trainSettings.append(el.closest('.field'))}
  const help=document.createElement('p');help.className='muted';help.textContent='Define las imágenes necesarias por clase. Usa distintos ángulos, acercamientos y defectos.';trainSettings.append(help);
  u('settingsContent').prepend(trainSettings);
+ const providerCard=document.createElement('div');providerCard.className='card';
+ providerCard.innerHTML='<h2>Modelo de inspección</h2><div class="field"><label for="detectionProvider">Proveedor</label><select id="detectionProvider"><option value="local">Local · MobileNet / KNN / PatchCore Lite</option><option value="roboflow">Roboflow · RF-DETR V3 (nube)</option></select></div><div class="field"><label for="remoteConfidence">Confianza mínima (%)</label><input id="remoteConfidence" type="number" min="5" max="95" step="5" value="50"></div><p class="muted">Roboflow necesita conexión, backend configurado y envía una imagen del producto al servicio. No usa la calibración local. En este modo el resultado sin detecciones significa «sin defecto detectado», no garantía de pieza correcta. Solo inspección manual.</p>';
+ u('settingsContent').prepend(providerCard);
+ u('detectionProvider').value=localStorage.getItem('vqc_detection_provider')||'local';
+ u('remoteConfidence').value=localStorage.getItem('vqc_remote_confidence')||'50';
+ u('detectionProvider').onchange=()=>{stopAuto();localStorage.setItem('vqc_detection_provider',u('detectionProvider').value);hideOperatorVerdict();updateOperator()};
+ u('remoteConfidence').onchange=()=>{const n=Math.max(5,Math.min(95,Number(u('remoteConfidence').value)||50));u('remoteConfidence').value=n;localStorage.setItem('vqc_remote_confidence',String(n))};
  const demoCard=document.createElement('div');demoCard.className='card';
  demoCard.innerHTML='<h2>Dataset de demostración</h2><p class="muted">El ejemplo de piezas correctas y defectuosas se instala automáticamente una vez cuando no tienes calibración guardada. Las imágenes de evaluación no se entrenan. Para la cámara necesitas registrar un fondo vacío.</p><input id="demoFile" type="file" accept=".json,application/json" aria-label="Importar otro dataset"><p id="demoImportStatus" class="muted" role="status">Comprobando ejemplos incluidos…</p>';
  u('settingsContent').prepend(demoCard);
@@ -479,8 +510,8 @@ function initOperatorUI(){
  u('exitSuper').onclick=leaveSupervisor;
  document.querySelectorAll('[data-pane]').forEach(b=>b.onclick=()=>setSupervisorPane(b.dataset.pane));
  u('modoManual').onclick=()=>{uiMode='manual';if(st.auto)stopAuto();updateOperator()};
- u('modoAuto').onclick=()=>{uiMode='automatic';updateOperator()};
- u('operPrimary').onclick=async()=>{if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){startAuto();return}u('operStatus').textContent='Analizando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
+ u('modoAuto').onclick=()=>{if(remoteEnabled()){toast('Roboflow está disponible solo en modo manual.');return}uiMode='automatic';updateOperator()};
+ u('operPrimary').onclick=async()=>{if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){if(remoteEnabled()){toast('El modelo Roboflow funciona en modo manual.');return}startAuto();return}u('operStatus').textContent='Analizando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
  u('calCapture').onclick=captureCal;u('calUndo').onclick=undoCal;u('calDone').onclick=approveTraining;
  u('fixGood').onclick=()=>{u('fixGood').classList.add('chosen');u('correctOK').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
  u('fixBad').onclick=()=>{u('fixBad').classList.add('chosen');u('correctKO').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
