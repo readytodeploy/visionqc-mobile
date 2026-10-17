@@ -282,7 +282,21 @@ on('clearBtn','click',async()=>{if(!confirm('¿Eliminar toda la calibración gua
 on('soundBtn','click',()=>{st.silent=!st.silent;$('soundBtn').textContent=st.silent?'♫':'♪';toast(st.silent?'Sonidos desactivados.':'Sonidos activados. El audio requiere interacción con la pantalla.')});on('themeBtn','click',()=>{const light=document.documentElement.dataset.theme!=='light';document.documentElement.dataset.theme=light?'light':'dark';$('themeColor').content=light?'#f6f7fa':'#10141b'});
 on('flipBtn','click',async()=>{st.facing=st.facing==='user'?'environment':'user';stopCamera();await startCamera()});on('torchBtn','click',async()=>{st.torch=!st.torch;await constrain({torch:st.torch})});on('focusBtn','click',()=>constrain({focusMode:'manual',exposureMode:'manual'}));on('zoom','input',e=>constrain({zoom:Number(e.target.value)}));
 on('fullscreenBtn','click',()=>{const on=$('viewer').classList.toggle('full');$('fullscreenBtn').textContent=on?'Salir de pantalla completa':'Expandir visor';drawGuide()});on('fullExit','click',()=>{$('viewer').classList.remove('full');drawGuide()});on('scanSpeed','change',()=>{if(st.auto){stopAuto();startAuto()}});
-new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAuto()});window.addEventListener('pagehide',stopCamera);initOperatorUI();restore();refresh();
+new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAuto()});window.addEventListener('pagehide',stopCamera);initOperatorUI();
+(async()=>{
+ await restore();
+ if(st.records.length===0 && localStorage.getItem('vqc_demo_autoload_disabled')!=='1'){
+   try{
+     const status=u('demoImportStatus');
+     if(status)status.textContent='Preparando dataset de demostración…';
+     const response=await fetch('/public/datasets/exemplos.json',{cache:'force-cache'});
+     if(!response.ok)throw Error('HTTP '+response.status);
+     const blob=await response.blob();
+     await importDemoDataset(new File([blob],'exemplos.json',{type:'application/json'}));
+   }catch(err){const status=u('demoImportStatus');if(status)status.textContent='Ejemplo disponible para importar manualmente: '+err.message;}
+ }
+ refresh();
+})();
 
 /* Interfaz Operario/Supervisor separada de los cálculos de visión. */
 let uiMode='manual',uiPinIntent='unlock',uiPane='cal';
@@ -426,7 +440,7 @@ function initOperatorUI(){
  const help=document.createElement('p');help.className='muted';help.textContent='Define las imágenes necesarias por clase. Usa distintos ángulos, acercamientos y defectos.';trainSettings.append(help);
  u('settingsContent').prepend(trainSettings);
  const demoCard=document.createElement('div');demoCard.className='card';
- demoCard.innerHTML='<h2>Dataset de demostración</h2><p class="muted">Importa el archivo JSON de EXEMPLOS. Las imágenes de evaluación nunca se usan para entrenar. No sustituye la captura de fondo para usar la cámara.</p><input id="demoFile" type="file" accept=".json,application/json" aria-label="Seleccionar dataset de ejemplo"><p id="demoImportStatus" class="muted" role="status">Sin dataset de ejemplo importado</p>';
+ demoCard.innerHTML='<h2>Dataset de demostración</h2><p class="muted">El ejemplo de piezas correctas y defectuosas se instala automáticamente una vez cuando no tienes calibración guardada. Las imágenes de evaluación no se entrenan. Para la cámara necesitas registrar un fondo vacío.</p><input id="demoFile" type="file" accept=".json,application/json" aria-label="Importar otro dataset"><p id="demoImportStatus" class="muted" role="status">Comprobando ejemplos incluidos…</p>';
  u('settingsContent').prepend(demoCard);
  u('demoFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(file)await importDemoDataset(file);e.target.value=''});
  const referenceBox=document.createElement('div');referenceBox.className='card';
