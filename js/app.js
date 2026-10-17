@@ -155,10 +155,10 @@ async function add(cls){if(st.busy||!st.model)return;st.busy=true;refresh();try{
 async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=true;try{const result=pre||await burst(),prediction=predictionFor(result.emb),sim=Number($('minSimilarity').value),margin=Number($('minMargin').value);
  if(referenceEnabled()&&$('localDetails')?.checked&&window.VQCVision){
   const detail=await window.VQCVision.analyze(result.canvas,st.records,{sensitivity:$('detailSensitivity').value,maxDifference:$('viewTolerance').value});
-  if(detail.state==='uncertain'){prediction.label='uncertain';prediction.reason=detail.reason}
-  else if(detail.state==='suspect'){prediction.label='ko';prediction.reason='Anomalía localizada en la superficie';prediction.score=Math.min(prediction.score,.8)}
-  else if(detail.state==='compatible'&&prediction.label==='ko'){prediction.label='uncertain';prediction.reason='La comparación local no confirma el defecto'}
- }const safe=(referenceEnabled()||patchEnabled())?prediction.label!=='uncertain':prediction.label!=='bg'&&prediction.score>=sim&&prediction.margin>=margin&&prediction.vote>=.12;const label=safe?prediction.label:'uncertain';newResult(label,prediction.score,(referenceEnabled()||patchEnabled())?'Anomalía '+(prediction.anomaly??0).toFixed(3)+' · Umbral '+(prediction.threshold??0).toFixed(3):'');flash(label);if(label==='uncertain'){st.pending=result;$('correctionCard').hidden=false;$('presenceState').textContent='Requiere confirmación'}else{$('correctionCard').hidden=true;$('presenceState').textContent=auto?'Pieza inspeccionada':'Inspección manual'}if(!auto){bump(label);await storeHistory({id:id(),at:Date.now(),label,score:prediction.score,batch:$('batch').value,operator:$('operator').value,thumb:result.thumb,error:label==='uncertain'})}else{st.pendingAuto={...result,label,score:prediction.score}}}catch(e){toast(e.message)}finally{st.busy=false;refresh()}}
+  if(detail.state==='uncertain'){clearDefectMarkers();prediction.label='uncertain';prediction.reason=detail.reason}
+  else if(detail.state==='suspect'){drawDefectMarkers(detail);prediction.label='ko';prediction.reason='Anomalía localizada en la superficie';prediction.score=Math.min(prediction.score,.8)}
+  else if(detail.state==='compatible'&&prediction.label==='ko'){clearDefectMarkers();prediction.label='uncertain';prediction.reason='La comparación local no confirma el defecto'}
+ }else{clearDefectMarkers()}const safe=(referenceEnabled()||patchEnabled())?prediction.label!=='uncertain':prediction.label!=='bg'&&prediction.score>=sim&&prediction.margin>=margin&&prediction.vote>=.12;const label=safe?prediction.label:'uncertain';newResult(label,prediction.score,(referenceEnabled()||patchEnabled())?'Anomalía '+(prediction.anomaly??0).toFixed(3)+' · Umbral '+(prediction.threshold??0).toFixed(3):'');flash(label);if(label==='uncertain'){st.pending=result;$('correctionCard').hidden=false;$('presenceState').textContent='Requiere confirmación'}else{$('correctionCard').hidden=true;$('presenceState').textContent=auto?'Pieza inspeccionada':'Inspección manual'}if(!auto){bump(label);await storeHistory({id:id(),at:Date.now(),label,score:prediction.score,batch:$('batch').value,operator:$('operator').value,thumb:result.thumb,error:label==='uncertain'})}else{st.pendingAuto={...result,label,score:prediction.score}}}catch(e){toast(e.message)}finally{st.busy=false;refresh()}}
 async function autoTick(){if(!st.auto||st.busy||st.autoBusy||!ready())return;st.autoBusy=true;try{const c=capture(),q=quality(c);qualityUI(q);if(q.values.m<18||q.values.m>245||!q.motion){$('presenceState').textContent='Esperando luz estable';return}/* [MEJORA-36] Prefiltro 32×32 evita inferencia CNN sobre banda vacía. */
 const fastEmpty=st.bgTiny&&pixDiff(tiny(c),st.bgTiny)<6;
 const emb=fastEmpty?null:embedding(c);const bg=fastEmpty?1:presence(emb),isEmpty=bg!==null&&bg>=Math.max(.90,Number($('minSimilarity').value))&&q.motion;st.emptyRun=isEmpty?st.emptyRun+1:0;st.presentRun=!isEmpty&&q.motion?st.presentRun+1:0;if(isEmpty){$('presenceState').textContent='Fondo vacío';if(st.emptyRun>=MIN_EMPTY){hideOperatorVerdict();if(st.pieceRecorded&&st.pendingAuto){const h=st.pendingAuto;bump(h.label);await storeHistory({id:id(),at:Date.now(),label:h.label,score:h.score,batch:$('batch').value,operator:$('operator').value,thumb:h.thumb,error:h.label==='uncertain'})}st.pieceRecorded=false;st.pendingAuto=null;st.pending=null;$('correctionCard').hidden=true}}else{$('presenceState').textContent=q.motion?'Pieza detectada':'Esperando estabilidad';if(st.presentRun>=MIN_STABLE&&!st.pieceRecorded){st.pieceRecorded=true;await inspect(true)}}}catch(e){toast('Escaneo interrumpido: '+e.message);stopAuto()}finally{st.autoBusy=false;refresh()}}
@@ -272,14 +272,32 @@ new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('vi
 /* Interfaz Operario/Supervisor separada de los cálculos de visión. */
 let uiMode='manual',uiPinIntent='unlock',uiPane='cal';
 function u(id){return document.getElementById(id)}
-function hideOperatorVerdict(){const p=u('verdictPanel');p.classList.remove('visible','ko','uncertain');p.hidden=true}
+function hideOperatorVerdict(){clearDefectMarkers();const p=u('verdictPanel');p.classList.remove('visible','ko','uncertain');p.hidden=true}
+/* Map detection cells from normalized product coordinates to the actual viewer ROI.
+   Indicators show suspicious image regions, not verified defect boundaries. */
+function clearDefectMarkers(){const layer=document.getElementById('defectMarkers');if(layer)layer.replaceChildren()}
+function drawDefectMarkers(detail){
+ const viewer=document.getElementById('viewer');if(!viewer||!detail?.box||!detail.regions?.length)return;
+ let layer=document.getElementById('defectMarkers');
+ if(!layer){layer=document.createElement('div');layer.id='defectMarkers';layer.setAttribute('aria-label','Regiones con posibles defectos');viewer.append(layer)}
+ layer.replaceChildren();
+ const g=geometry(),box=detail.box,cell=16,sourceSize=192;
+ for(const region of detail.regions.slice(0,3)){
+  const x=(box.x+(region.x+.5)*cell*box.side/sourceSize)/sourceSize;
+  const y=(box.y+(region.y+.5)*cell*box.side/sourceSize)/sourceSize;
+  const marker=document.createElement('div');marker.className='defectMarker';
+  marker.style.left=(g.r.x+g.r.w*x)+'px';marker.style.top=(g.r.y+g.r.h*y)+'px';
+  marker.textContent='!';marker.setAttribute('aria-label','Posible defecto');
+  layer.append(marker);
+ }
+}
 function presentOperatorVerdict(label,score){
  const p=u('verdictPanel');if(!label){hideOperatorVerdict();return}
  p.hidden=false;p.className='visible'+(label==='ko'?' ko':label==='uncertain'?' uncertain':'');
  u('vIcon').textContent=label==='ok'?'✓':label==='ko'?'✕':'?';
  u('vText').textContent=label==='ok'?'BUENA':label==='ko'?'DEFECTO':'REVISAR';
  u('vScore').textContent=score===null?'':Math.round(score*100)+'%';
- u('fixButtons').hidden=label!=='uncertain';
+ u('fixButtons').hidden=label!=='uncertain';u('gameHint').hidden=label!=='uncertain';
  u('operStatus').textContent=label==='uncertain'?'Confirma el resultado':st.auto?'Quita la pieza':'Retira la pieza';
  if(navigator.vibrate)navigator.vibrate(label==='ko'?[80,60,80]:[40]);
 }
@@ -320,6 +338,7 @@ function closeTurn(){if(!confirm('¿Cerrar turno y reiniciar contadores?'))retur
 function initOperatorUI(){
  // El veredicto debe vivir dentro del visor y empezar oculto.
  u('operVideo').append(u('verdictPanel'));hideOperatorVerdict();
+ const actionHint=document.createElement('div');actionHint.id='gameHint';actionHint.hidden=true;actionHint.textContent='CONFIRMA LA PIEZA';u('verdictPanel').append(actionHint);
  // Mantenemos los controles de ML originales y montamos el mismo vídeo en ambas pantallas.
  u('turnPane').append(u('productionCard'),u('historyCard'));
  u('settingsContent')?.append();
@@ -371,8 +390,8 @@ function initOperatorUI(){
  u('modoAuto').onclick=()=>{uiMode='automatic';updateOperator()};
  u('operPrimary').onclick=async()=>{if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){startAuto();return}u('operStatus').textContent='Analizando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
  u('calCapture').onclick=captureCal;u('calUndo').onclick=undoCal;u('calDone').onclick=leaveSupervisor;
- u('fixGood').onclick=()=>{u('correctOK').click();hideOperatorVerdict()};
- u('fixBad').onclick=()=>{u('correctKO').click();hideOperatorVerdict()};
+ u('fixGood').onclick=()=>{u('fixGood').classList.add('chosen');u('correctOK').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
+ u('fixBad').onclick=()=>{u('fixBad').classList.add('chosen');u('correctKO').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
  u('closeTurn').onclick=closeTurn;
  // PIN eliminado: no acceder a un botón que ya no existe.
  u('batch').oninput=updateOperator;
