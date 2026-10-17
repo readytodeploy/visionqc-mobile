@@ -8,113 +8,70 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>VisionQC — Inspección inteligente</title>
 <style>
-/* [MEJORA-1] Una sola hoja de estilo; tema oscuro plano de alto contraste, con tema claro opcional. */
-:root{color-scheme:dark;--bg:#10141b;--surface:#1b222d;--surface2:#252e3a;--line:#394553;--fg:#f7f9fc;--sub:#bec8d3;--ok:#48e0aa;--ko:#ff7382;--warn:#ffd17c;--accent:#e7efff;--ink:#111a28;font:15px/1.4 -apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
-@media(prefers-color-scheme:light){:root{color-scheme:light;--bg:#f6f7fa;--surface:#fff;--surface2:#ebeff4;--line:#c5cfda;--fg:#1d2632;--sub:#536172;--ok:#067e56;--ko:#bd2441;--warn:#895900;--accent:#192536;--ink:white}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#10141b;--surface:#1b222d;--surface2:#252e3a;--line:#394553;--fg:#f7f9fc;--sub:#bec8d3;--ok:#48e0aa;--ko:#ff7382;--warn:#ffd17c;--accent:#e7efff;--ink:#111a28}
-:root[data-theme="light"]{color-scheme:light;--bg:#f6f7fa;--surface:#fff;--surface2:#ebeff4;--line:#c5cfda;--fg:#1d2632;--sub:#536172;--ok:#067e56;--ko:#bd2441;--warn:#895900;--accent:#192536;--ink:white}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg)}button,input,select{font:inherit}button,select{min-height:44px}button{cursor:pointer;touch-action:manipulation}button:disabled{opacity:.42;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #79adff;outline-offset:2px}.app{width:min(100%,570px);margin:auto;min-height:100dvh;padding-bottom:calc(112px + env(safe-area-inset-bottom))}.top{padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{font-size:21px;letter-spacing:-.7px;font-weight:800}.brand small{display:block;color:var(--sub);letter-spacing:1.3px;font-size:10px;font-weight:650}.topActions{display:flex;gap:8px}.iconBtn{border:1px solid var(--line);border-radius:15px;background:var(--surface);color:var(--fg);padding:0 12px;font-size:16px}.step{margin:3px 16px 10px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--sub)}.step strong{color:var(--fg)}.progress{margin:0 16px 14px;height:5px;background:var(--surface2);border-radius:9px;overflow:hidden}.progress>div{height:100%;width:0;background:var(--ok);transition:width .3s ease}
-/* [MEJORA-2] La retícula vive dentro del mismo viewport que usa el mapeo object-fit:cover. */
-.viewer{position:relative;margin:0 12px;background:#090c11;border-radius:24px;overflow:hidden;height:clamp(290px,49dvh,530px);border:2px solid #435063;isolation:isolate}.viewer video{width:100%;height:100%;object-fit:cover;display:block}.viewer canvas.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.viewer .empty{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:#e0e6ee;padding:25px;background:#171e27}.viewer .empty b{font-size:20px}.viewer .empty p{max-width:270px;font-size:13px;color:#c5d0db}.viewer .chips{position:absolute;left:10px;right:10px;top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between}.chip{color:#fff;font-size:11px;font-weight:700;background:#101822d9;padding:8px 10px;border-radius:14px;backdrop-filter:blur(6px)}.viewer .hint{position:absolute;bottom:12px;left:15%;right:15%;border-radius:18px;background:#101822dd;text-align:center;padding:9px;color:#fff;font-size:12px}.viewer.good{border-color:var(--ok)}.viewer.bad{border-color:var(--ko)}.viewer.uncertain{border-color:var(--warn)}.viewer.flash{animation:blink .28s ease}
-@keyframes blink{50%{box-shadow:inset 0 0 0 9px #ffffff70}}
-.result{position:absolute;left:50%;bottom:55px;transform:translateX(-50%);white-space:nowrap;min-width:185px;background:#1c2531ee;border:2px solid #9aa5b4;padding:8px 17px;border-radius:18px;color:#fff;text-align:center;box-shadow:0 4px 20px #0005}.result b{font-size:21px;letter-spacing:-.5px}.result small{display:block;color:#dce7f1;font-size:11px}.result.good{background:#0d5742ee;border-color:#5cf8c0}.result.bad{background:#842138ee;border-color:#ff8794}.result.uncertain{background:#765017ee;border-color:#ffda8d}
-.quality{display:flex;gap:6px;margin:9px 14px 0;flex-wrap:wrap}.quality span{flex:1;min-width:85px;text-align:center;border:1px solid var(--line);border-radius:12px;padding:8px 5px;color:var(--sub);font-size:11px}.quality strong{color:var(--fg)}.quality .fail{color:var(--warn)}.card{margin:12px 14px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:18px}.card h2{font-size:16px;margin:0 0 8px;letter-spacing:-.25px}.muted{color:var(--sub);font-size:12px}.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.button{border:1px solid var(--line);border-radius:14px;background:var(--surface2);color:var(--fg);padding:10px 14px;font-weight:700}.button.primary{background:var(--accent);color:var(--ink);border-color:var(--accent)}.button.good{border-color:var(--ok);color:var(--ok)}.button.bad{border-color:var(--ko);color:var(--ko)}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.meter{font-size:12px;margin-top:7px}.meter .track{height:6px;background:var(--surface2);border-radius:7px;overflow:hidden;margin:5px 0}.meter .track>i{display:block;height:100%;background:var(--ok);width:0}.meter.bad .track>i{background:var(--ko)}.field{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;color:var(--sub);font-size:13px}.field input:not([type=checkbox]),.field select{width:125px;background:var(--surface2);border:1px solid var(--line);color:var(--fg);border-radius:12px;padding:10px;min-height:44px}.field input[type=range]{accent-color:var(--ok)}.field input[type=checkbox]{width:22px;height:22px;accent-color:var(--ok)}.small{font-size:11px}.notice{border:1px solid var(--line);border-radius:13px;margin-top:8px;padding:10px;font-size:12px;color:var(--sub)}.notice.error{color:var(--ko)}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stats div{padding:11px;background:var(--surface2);border-radius:12px}.stats b{font-size:21px;display:block}.stats small{font-size:11px;color:var(--sub)}.log{max-height:260px;overflow:auto}.item{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:9px 0}.item img{width:46px;height:46px;border-radius:10px;object-fit:cover}.item .details{flex:1;font-size:12px}.item .details small{display:block;color:var(--sub)}.tag{font-weight:800;color:var(--ok)}.tag.ko{color:var(--ko)}.tag.uncertain{color:var(--warn)}details>summary{min-height:48px;cursor:pointer;font-weight:700;display:flex;align-items:center;padding:6px 0}.actionbar{position:fixed;z-index:10;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--line);padding:11px max(14px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));display:flex;gap:10px;justify-content:center}.actionbar>button{height:57px;border-radius:17px;font-size:15px}.actionbar .mainAction{flex:2;max-width:350px}.actionbar .modeAction{flex:1;max-width:160px}.toast{position:fixed;z-index:50;top:calc(54px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(92vw,450px);padding:12px;border-radius:15px;background:#392519;color:#ffe3ba;font-size:13px;box-shadow:0 8px 28px #0005}.toast[hidden],.hidden{display:none!important}.feedback{display:flex;gap:8px;margin-top:9px}.feedback button{flex:1}.viewer.full{position:fixed;z-index:20;inset:0;margin:0;border-radius:0;width:100vw;height:100dvh}.viewer.full .hint{bottom:calc(95px + env(safe-area-inset-bottom))}.fullExit{display:none;position:absolute;right:12px;bottom:12px;min-height:45px;border:0;border-radius:14px;color:white;background:#1a2532e6;padding:10px 15px}.viewer.full .fullExit{display:block}
-@media(orientation:landscape) and (max-height:570px){.viewer{height:60dvh}.viewer.full{height:100dvh}.app{padding-bottom:105px}.result{bottom:8px;left:25%;transform:translateX(-50%)}.viewer .hint{bottom:8px;left:54%;right:8px}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
-/* [MEJORA-21] Navegación móvil por tareas: cuatro pestañas, una cámara compartida y una sola jerarquía visual. */
-.app{padding-bottom:calc(162px + env(safe-area-inset-bottom))}
-.tab-pane[hidden]{display:none!important}.tab-pane{min-width:0}
-.tabs{position:fixed;z-index:29;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);gap:4px;box-shadow:0 -6px 20px #0002}
-.tabs button{min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;border-radius:13px;background:transparent;color:var(--sub);font-size:11px;font-weight:650}
-.tabs button .glyph{font-size:21px;line-height:22px}.tabs button[aria-selected=true]{background:var(--surface2);color:var(--fg)}
-.actionbar{bottom:calc(70px + env(safe-area-inset-bottom));padding:8px 14px;background:var(--bg);border:0;box-shadow:0 -8px 22px #0002}
-.actionbar[hidden]{display:none!important}
-#calibrationPanel .viewer,#calibrationPanel .quality{margin-bottom:12px}
-#training{margin-top:14px}#training .two{margin-top:12px}
-#training .two button{min-height:58px;font-size:15px}
-.tab-caption{padding:4px 6px 12px}.tab-caption h1{font-size:23px;letter-spacing:-.6px;margin:5px 0}.tab-caption p{margin:0;color:var(--sub);font-size:13px}
-#tab-calibration .viewer{height:32dvh;min-height:235px;max-height:350px}#tab-calibration .result{font-size:13px}
-#tab-camera .card,#tab-production .card{margin-top:12px}
-#tab-camera .button,#tab-production .button{min-height:48px}
-body[data-tab=calibration] .app{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
-body[data-tab=production] .app,body[data-tab=camera] .app{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
-@media(orientation:landscape) and (max-height:570px){.tabs{grid-template-columns:repeat(4,1fr)}.tabs button{min-height:45px;flex-direction:row}.actionbar{bottom:calc(62px + env(safe-area-inset-bottom))}#tab-calibration .viewer{height:45dvh}}
+:root{color-scheme:dark;--bg:#090c12;--surface:#191f29;--surface2:#29313e;--line:#445060;--fg:#fff;--sub:#c3cbd7;--ok:#30d158;--ko:#ff453a;--warn:#ffd60a;--accent:#0a84ff;--ink:#fff;font:17px/1.35 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg)}button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation;border:0}button:disabled{opacity:.45}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[hidden]{display:none}
+.app{min-height:100dvh}.top{height:calc(48px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top) 16px 0}.brand{font-size:20px;font-weight:750}.brand small{display:none}.topActions{display:flex;gap:8px}.iconBtn{min-height:48px;min-width:48px;border-radius:12px;background:var(--surface);color:var(--fg)}
+#operScreen{height:100dvh;display:flex;flex-direction:column;background:#090c12;overflow:hidden}
+#operHead{height:calc(48px + env(safe-area-inset-top));flex:none;display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top) 16px 0;font-size:17px}
+#operHead b{font-size:17px;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#operHead span{font-weight:700}#operMenu{background:transparent;color:white;width:48px;height:48px;font-size:27px}
+#operStatus{height:32px;flex:none;display:grid;place-items:center;font-size:15px;color:#e3e8f1;text-align:center;padding:0 12px}
+#operVideo{position:relative;flex:1;min-height:0;background:#080c12}
+.viewer{position:relative;background:#080c12;overflow:hidden;width:100%;height:100%;margin:0;border:0}
+.viewer video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.viewer canvas.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+.viewer .empty{position:absolute;inset:0;display:grid;place-items:center;background:#19212b;color:white;text-align:center;padding:24px}.viewer .empty[hidden]{display:none}
+.viewer .chips,.viewer .viewerBadge,.viewer .result,.viewer .hint,.viewer .fullExit{display:none}
+#operActions{flex:none;background:#090c12;padding:8px 16px calc(12px + env(safe-area-inset-bottom))}
+.segment{background:#232b37;display:grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:14px;margin-bottom:8px}
+.segment button{min-height:44px;background:transparent;color:#cbd2dd;border-radius:11px;font-weight:700}.segment button[aria-pressed=true]{background:#fff;color:#111827}
+.primary{min-height:64px;width:100%;border-radius:20px;background:#0a84ff;color:white;font-size:19px;font-weight:750}
+#verdictPanel{position:absolute;z-index:10;left:0;right:0;bottom:0;min-height:220px;height:34%;background:#30d158;color:#06190e;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(105%);transition:transform .2s ease-out;text-align:center;padding:12px}
+#verdictPanel.visible{transform:translateY(0)}#verdictPanel.ko{background:#ff453a;color:#210300}#verdictPanel.uncertain{background:#ffd60a;color:#201800}
+#vIcon{font-size:72px;font-weight:850;line-height:1}#vText{font-size:clamp(48px,11vw,66px);font-weight:850;letter-spacing:-1px}#vScore{font-size:15px;font-weight:700}
+#fixButtons{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:8px}#fixButtons button{min-height:64px;background:#101820;color:white;border-radius:15px;font-weight:700}
+#operMissing{position:absolute;bottom:12px;left:12px;right:12px;background:#192332;color:white;padding:15px;border:1px solid #506071;border-radius:16px;text-align:center}#operMissing button{min-height:48px;border-radius:12px;background:#343f50;color:white;width:100%}
+#superScreen{min-height:100dvh;padding-bottom:calc(85px + env(safe-area-inset-bottom));background:var(--bg);color:var(--fg)}
+#superHead{min-height:calc(58px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top) 16px 0;border-bottom:1px solid var(--line)}#superHead b{font-size:25px}#exitSuper{background:transparent;color:#76bbff;min-height:48px;font-weight:700}
+.superPane{padding:16px;max-width:600px;margin:auto}.superPane h2{font-size:28px;margin:5px 0 14px}.superPane p{color:var(--sub);font-size:15px}
+#calViewer{height:clamp(240px,40dvh,420px);overflow:hidden;border-radius:16px;margin:10px 0;position:relative;background:#080c12}
+.calSteps{display:flex;gap:8px;margin:12px 0}.calSteps span{flex:1;background:var(--surface2);padding:10px 3px;border-radius:12px;text-align:center;font-size:13px;font-weight:700}.calSteps .active{background:var(--accent);color:white}
+.calProgress{height:8px;border-radius:8px;background:var(--surface2);overflow:hidden;margin:12px 0}.calProgress i{height:100%;width:0;background:var(--accent);display:block;transition:width .2s ease-out}
+#calCount{font-size:23px;font-weight:800;margin:10px 0}#calCapture{margin:12px 0}
+.secondary,.button{min-height:48px;background:var(--surface2);color:var(--fg);border:1px solid var(--line);border-radius:15px;padding:10px 14px;font-weight:700}.secondary{width:100%}
+#superTabs{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line)}
+#superTabs button{min-height:55px;border-radius:12px;background:transparent;color:var(--sub);font-size:14px;font-weight:700}#superTabs button[aria-selected=true]{background:var(--surface2);color:var(--fg)}
+.card{background:var(--surface);border:1px solid var(--line);padding:16px;border-radius:18px;margin:12px 0}.card h2{font-size:18px;margin:0 0 9px}.muted,.notice{color:var(--sub);font-size:13px}
+.field{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;border-bottom:1px solid var(--line)}.field label{flex:1}.field input:not([type=checkbox]),.field select{background:var(--surface2);color:var(--fg);max-width:145px;min-height:44px;border:1px solid var(--line);border-radius:12px;padding:8px}.field input[type=checkbox]{height:24px;width:24px}
+.row,.two{display:flex;gap:8px;justify-content:space-between;align-items:center}.two>*{flex:1}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stats>div{padding:15px 7px;background:var(--surface2);border-radius:15px}.stats b{font-size:26px;display:block}.stats small{font-size:12px;color:var(--sub)}
+.log{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:none}.item{background:var(--surface2);border-radius:14px;padding:8px;min-width:0}.item img{width:100%;height:100px;object-fit:cover;border-radius:10px}.item .details{overflow-wrap:anywhere;font-size:13px}.item .details small{display:block}.tag{color:var(--ok)}.tag.ko{color:var(--ko)}
+#legacyHost{display:none}#superSettings details{margin-top:10px}#superSettings summary{min-height:48px;padding:12px;color:var(--fg);font-weight:700}
+#accessMenu{position:fixed;top:calc(52px + env(safe-area-inset-top));right:12px;background:#273141;border:1px solid #566273;border-radius:15px;padding:8px;z-index:50}#accessMenu button{background:none;color:white;min-height:48px;padding:8px 20px}
+#pinOverlay{position:fixed;inset:0;z-index:80;background:#0b1018;display:grid;place-items:center;padding:20px}#pinBox{background:#202938;border-radius:20px;padding:24px;width:min(100%,390px)}#pinBox h2{font-size:27px;margin:0}#pinBox p{font-size:15px;color:#d0d9e5}#pinBox input{width:100%;height:64px;text-align:center;font-size:31px;letter-spacing:8px;background:#111824;color:white;border:1px solid #748196;border-radius:15px;margin:15px 0}
+#pinOverlay[hidden],#accessMenu[hidden]{display:none}
+#toast{position:fixed;z-index:60;top:calc(60px + env(safe-area-inset-top));left:12px;right:12px;background:#2c3542;color:#fff;padding:13px;border-radius:13px}
+@media(orientation:landscape) and (max-height:570px){#verdictPanel{height:85%;min-height:145px}#vIcon{font-size:45px}#vText{font-size:48px}#operActions{padding-top:4px}.segment{margin-bottom:4px}}
+@media(prefers-reduced-motion:reduce){*{transition:none;animation:none}}
 
-/* [MEJORA-25] Visor más limpio, retícula visible y botones en la zona del pulgar. */
-.viewer{position:relative;border-radius:22px;overflow:hidden;background:#090e14;isolation:isolate;min-height:270px;box-shadow:0 0 0 1px var(--line)}
-.viewer video{width:100%;height:100%;object-fit:cover}
-.viewerBadge{position:absolute;z-index:4;top:13px;left:12px;color:#fff;background:#17222bdb;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid #ffffff34;border-radius:99px;padding:8px 13px;font-size:12px;font-weight:750;pointer-events:none}
-.viewerBadge.live{color:#a1ffdf}
-.viewer .result{z-index:4;border:1px solid #ffffff35;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.viewer .hint{z-index:3;font-size:12px;font-weight:650}
-body[data-tab="calibration"] #training{display:flex;flex-direction:column;gap:10px}
-body[data-tab="calibration"] #viewer{height:clamp(250px,38dvh,430px);margin:0 0 8px;width:100%}
-body[data-tab="calibration"] .quality{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 10px}
-.calibrateStart{width:100%;min-height:54px;margin:10px 0;font-size:16px}
-.calibrationCaptures{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:8px 0 14px}
-.calibrationCaptures button{min-height:52px;border-radius:15px}
-.calibrationCaptures #backgroundBtn{grid-column:1/-1}
-body[data-tab="calibration"] .tab-caption{margin-bottom:8px}
-body[data-tab="calibration"] #trainingInstruction{padding:12px 14px;border-radius:14px;background:var(--surface2);color:var(--fg);font-weight:600}
-@media(orientation:landscape) and (max-height:570px){body[data-tab="calibration"] #viewer{height:57dvh}}
-
-/* [MEJORA-29] El vídeo tiene alto explícito y el panel no interfiere con sus dimensiones. */
-#tab-calibration #training>.viewer{display:block;position:relative;width:100%;height:clamp(270px,42dvh,440px)!important;min-height:270px;flex:none;background:#080c12}
-#tab-calibration #training>.viewer video{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;visibility:visible;opacity:1}
-#tab-calibration #training>.viewer canvas.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-#tab-calibration #training>.quality{width:100%;flex:none}
-#tab-calibration .calibrateStart{position:relative;z-index:2}
-
-/* [MEJORA-30] El visor es el primer elemento operativo en Calibración, sin cajas anidadas. */
-#tab-calibration{display:flex;flex-direction:column;gap:10px}
-#tab-calibration[hidden]{display:none}
-#tab-calibration #viewer{order:2;width:100%;height:clamp(310px,46dvh,520px)!important;min-height:310px;margin:0;flex:none;border-radius:20px;overflow:hidden;background:#0b1018}
-#tab-calibration #viewer video{display:block!important;visibility:visible!important;opacity:1!important;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
-#tab-calibration #viewer .empty{z-index:1}
-#tab-calibration #viewer .overlay{z-index:2}
-#tab-calibration #viewer .chips,#tab-calibration #viewer .result,#tab-calibration #viewer .viewerBadge{z-index:3}
-#tab-calibration .tab-caption{order:0}
-#tab-calibration #trainingInstruction{order:1;margin:0}
-#tab-calibration .quality{order:3}
-#tab-calibration #calibrationCameraBtn{order:4;margin:2px 0}
-#tab-calibration #calibrationCaptures{order:5;margin:0}
-#tab-calibration #training{order:6;margin:4px 0 0}
-#tab-calibration #training .calibrationCaptures{display:none}
-#tab-calibration #viewer .hint{max-width:90%}
-@media(max-height:720px){#tab-calibration #viewer{height:39dvh!important;min-height:250px}}
-
-/* [MEJORA-31] CORRECCIÓN RAÍZ: display:grid del placeholder anulaba el atributo hidden de HTML.
-   En Safari la capa opaca seguía cubriendo el video incluso con cámara y modelo listos. */
-[hidden],.viewer .empty[hidden],#empty[hidden]{display:none!important}
-.viewer video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
-.viewer .empty{z-index:1}
-.viewer canvas.overlay{z-index:2}
-.viewer .chips,.viewer .result,.viewer .hint,.viewer .viewerBadge{z-index:3}
-
-/* [MEJORA-33] Visor operativo: una sola tarea, sin información técnica redundante. */
-body[data-tab="visor"] .step,body[data-tab="visor"] .progress,
-body[data-tab="visor"] .quality,body[data-tab="visor"] #fullscreenBtn{display:none!important}
-body[data-tab="visor"] #tab-visor{padding-top:5px}
-body[data-tab="visor"] #viewer{height:clamp(390px,65dvh,680px);max-height:calc(100dvh - 235px);min-height:310px;margin:0 12px;border-radius:24px;border-width:1px}
-body[data-tab="visor"] #viewer .viewerBadge{top:14px;left:14px;font-size:11px}
-body[data-tab="visor"] #viewer .chips{top:14px;left:auto;right:14px;max-width:48%;justify-content:flex-end}
-body[data-tab="visor"] #viewer #cameraState{display:none!important}
-body[data-tab="visor"] #viewer #presenceState{font-size:10px;padding:8px 10px;text-align:right}
-body[data-tab="visor"] #viewer .hint{bottom:16px;left:16px;right:16px;font-size:12px;padding:8px 10px;max-width:none}
-body[data-tab="visor"] #viewer .result{bottom:67px;min-width:172px;padding:12px 20px;border-radius:17px}
-body[data-tab="visor"] #viewer .result b{font-size:28px}
-body[data-tab="visor"] #viewer .result small{font-size:11px}
-body[data-tab="visor"] #viewer #result:not(.good):not(.bad):not(.uncertain){background:#121a25ad;border:1px solid #ffffff40}
-body[data-tab="visor"] .actionbar{padding:9px 14px 10px;gap:9px}
-body[data-tab="visor"] .actionbar .mainAction{height:60px;font-size:16px}
-body[data-tab="visor"] .actionbar .modeAction{height:60px}
-body[data-tab="visor"] #correctionCard{margin:10px 14px}
-@media(max-height:740px){body[data-tab="visor"] #viewer{height:calc(100dvh - 243px);min-height:255px}}
-@media(orientation:landscape) and (max-height:570px){body[data-tab="visor"] #viewer{height:calc(100dvh - 135px);min-height:180px}body[data-tab="visor"] #viewer .result{bottom:12px;left:50%}body[data-tab="visor"] #viewer .hint{display:none}}
 </style>
 </head>
-<body><main class="app">
+<body>
+<!-- MAPA IDs: viewer/video/overlay preservados; mainBtn→operPrimary; autoBtn→modoAuto/operPrimary;
+result/verdict/score→verdictPanel/vText/vScore; correctionCard→fixButtons;
+training/backgroundBtn/addOK/addKO→calCapture; history/countAll/countBad/rate preservados;
+productionCard→turnContent; cameraCard→settingsContent; exportBtn/importBtn conservados. -->
+<section id="operScreen"><header id="operHead"><b id="lotName">Sin lote</b><div><span id="shiftNumbers">0 · 0 KO</span><button id="operMenu" aria-label="Menú supervisor">⋯</button></div></header>
+<div id="operStatus" role="status" aria-live="polite">Coloca la pieza</div><div id="operVideo"><div id="operMissing" hidden><p>Falta calibrar. Pide a tu supervisor.</p><button id="goSuper">Abrir modo supervisor</button></div></div>
+<div id="operActions"><div class="segment" role="group" aria-label="Modo"><button id="modoManual" aria-pressed="true">Manual</button><button id="modoAuto" aria-pressed="false">Auto</button></div><button class="primary" id="operPrimary">Activar cámara</button></div></section>
+<section id="superScreen" hidden><header id="superHead"><b>Supervisor</b><button id="exitSuper">Salir ✓</button></header>
+<div id="calPane" class="superPane"><h2>Calibrar</h2><div id="calSteps" class="calSteps"><span class="active">Fondo</span><span>Buenas</span><span>Malas</span></div><div id="calViewer"></div><div class="calProgress"><i id="calFill"></i></div><div id="calCount">Fondo vacío</div><p id="calHelp">Retira todas las piezas.</p><button id="calCapture" class="primary">Capturar</button><button id="calUndo" class="secondary">Deshacer última</button><button id="calDone" class="secondary" hidden>Volver a inspección</button></div>
+<div id="turnPane" class="superPane" hidden><h2>Turno</h2><div id="turnContent"></div><button id="closeTurn" class="secondary">Cerrar turno</button></div>
+<div id="settingsPane" class="superPane" hidden><h2>Ajustes</h2><div id="settingsContent"></div><button id="setPin" class="secondary">Cambiar PIN</button></div>
+<nav id="superTabs" aria-label="Supervisor" role="tablist"><button data-pane="cal" aria-selected="true">◎ Calibrar</button><button data-pane="turn" aria-selected="false">▦ Turno</button><button data-pane="settings" aria-selected="false">⚙ Ajustes</button></nav></section>
+<div id="accessMenu" hidden><button id="accessSupervisor">Supervisor</button></div>
+<div id="pinOverlay" hidden role="dialog" aria-modal="true"><div id="pinBox"><h2 id="pinTitle">PIN supervisor</h2><p id="pinHint">Introduce cuatro dígitos</p><input id="pinInput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="PIN de cuatro dígitos"><p id="pinMessage"></p><div class="two"><button id="pinBack" class="secondary">Cancelar</button><button id="pinOK" class="primary">Continuar</button></div></div></div>
+<div id="verdictPanel" role="alert" aria-live="assertive"><div id="vIcon">✓</div><div id="vText">BUENA</div><div id="vScore"></div><div id="fixButtons" class="two" hidden><button id="fixGood" class="secondary">Era buena</button><button id="fixBad" class="secondary">Era mala</button></div></div>
+<div id="legacyHost"><main class="app">
 <header class="top"><div class="brand">VisionQC<small>INSPECCIÓN INDUSTRIAL</small></div><div class="topActions"><button class="iconBtn" id="soundBtn" aria-label="Activar o desactivar sonidos">♫</button><button class="iconBtn" id="themeBtn" aria-label="Cambiar tema">◐</button><button class="iconBtn" id="flipBtn" aria-label="Cambiar cámara" disabled>↻</button></div></header>
 <div class="step"><span id="stepLabel">PASO 1 / 3</span><strong id="stepText">Activar cámara</strong></div><div class="progress"><div id="stepProgress"></div></div>
 <div class="viewer" id="viewer"><div class="viewerBadge" id="viewerBadge" aria-live="polite">◎ Cámara lista para activar</div><video id="video" playsinline webkit-playsinline muted autoplay></video><canvas id="overlay" class="overlay" aria-hidden="true"></canvas><div id="empty" class="empty"><div><b>Inspección visual</b><p>Activa la cámara para comenzar. Alinea la pieza con el recuadro.</p></div></div><div class="chips"><span class="chip" id="cameraState">● Cámara inactiva</span><span class="chip" id="presenceState">Sin referencia de fondo</span></div><div id="result" class="result" aria-live="polite" aria-atomic="true"><b id="verdict">SIN ANALIZAR</b><small id="score">Esperando cámara</small></div><div class="hint" id="hint">Coloca el teléfono frente a la línea</div><button id="fullExit" class="fullExit">Salir de pantalla completa</button></div>
@@ -136,7 +93,7 @@ body[data-tab="visor"] #correctionCard{margin:10px 14px}
 <button type="button" role="tab" id="tab-button-production" aria-controls="tab-production" aria-selected="false" data-tab="production"><span class="glyph" aria-hidden="true">▤</span>Producción</button>
 <button type="button" role="tab" id="tab-button-camera" aria-controls="tab-camera" aria-selected="false" data-tab="camera"><span class="glyph" aria-hidden="true">⚙</span>Cámara</button>
 </nav><canvas id="frame" hidden></canvas>
-</main>
+</main></div>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
 <script>
@@ -219,10 +176,10 @@ function download(content,name,type){const a=document.createElement('a'),url=URL
 function tiny(c){const o=tiny.canvas||(tiny.canvas=document.createElement('canvas'));o.width=o.height=32;const x=o.getContext('2d',{willReadFrequently:true});x.drawImage(c,0,0,32,32);const d=x.getImageData(0,0,32,32).data,g=new Float32Array(1024);for(let i=0;i<1024;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return g}
 function pixDiff(a,b){let sum=0;for(let i=0;i<1024;i++)sum+=Math.abs(a[i]-b[i]);return sum/1024}
 function presence(emb){const b=st.records.filter(x=>x.label==='bg');if(!b.length)return null;return Math.max(...b.map(r=>similarity(emb,r.emb)))}
-function newResult(label,score=null,text=''){const elem=$('result'),v=$('viewer');elem.className='result';v.classList.remove('good','bad','uncertain');const mode=label==='ok'?'good':label==='ko'?'bad':label==='uncertain'?'uncertain':'';if(mode){elem.classList.add(mode);v.classList.add(mode)}$('verdict').textContent=label==='ok'?'✓ OK':label==='ko'?'✕ KO':label==='uncertain'?'! INCIERTO':'SIN ANALIZAR';$('score').textContent=text||(score===null?'Esperando inspección':`Similitud ${(score*100).toFixed(1)}%`)}
+function newResult(label,score=null,text=''){presentOperatorVerdict(label,score);const elem=$('result'),v=$('viewer');elem.className='result';v.classList.remove('good','bad','uncertain');const mode=label==='ok'?'good':label==='ko'?'bad':label==='uncertain'?'uncertain':'';if(mode){elem.classList.add(mode);v.classList.add(mode)}$('verdict').textContent=label==='ok'?'✓ OK':label==='ko'?'✕ KO':label==='uncertain'?'! INCIERTO':'SIN ANALIZAR';$('score').textContent=text||(score===null?'Esperando inspección':`Similitud ${(score*100).toFixed(1)}%`)}
 function beep(label){if(st.silent)return;try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;st.audio=st.audio||new A();st.audio.resume();const osc=st.audio.createOscillator(),gain=st.audio.createGain(),now=st.audio.currentTime;osc.type='sine';osc.frequency.value=label==='ok'?820:label==='ko'?280:530;gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.075,now+.025);gain.gain.exponentialRampToValueAtTime(.0001,now+.18);osc.connect(gain);gain.connect(st.audio.destination);osc.start(now);osc.stop(now+.2)}catch(e){}}
 function flash(label){const v=$('viewer');v.classList.remove('flash');void v.offsetWidth;v.classList.add('flash');beep(label)}
-function toast(msg){$('toast').textContent=msg;$('toast').hidden=!msg;clearTimeout(st.toastTimer);if(msg)st.toastTimer=setTimeout(()=>$('toast').hidden=true,6500)}
+function toast(msg){if(msg&&document.getElementById('operStatus'))document.getElementById('operStatus').textContent=msg.slice(0,90);$('toast').textContent=msg;$('toast').hidden=!msg;clearTimeout(st.toastTimer);if(msg)st.toastTimer=setTimeout(()=>$('toast').hidden=true,6500)}
 /* [MEJORA-37] PatchCore Lite, banco de parches OK, distancia coseno y coreset limitado.
   Alternativa funcional inspirada en PatchCore; NO usa backbone multiescala Anomalib ni ONNX. */
 const patchState={signature:'',bank:[],threshold:.13,referenceCount:0};
@@ -296,7 +253,7 @@ async function add(cls){if(st.busy||!st.model)return;st.busy=true;refresh();try{
 async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=true;try{const result=pre||await burst(),prediction=predictionFor(result.emb),sim=Number($('minSimilarity').value),margin=Number($('minMargin').value);const safe=patchEnabled()?prediction.label!=='uncertain':prediction.label!=='bg'&&prediction.score>=sim&&prediction.margin>=margin&&prediction.vote>=.12;const label=safe?prediction.label:'uncertain';newResult(label,prediction.score,patchEnabled()?'Anomalía '+(prediction.anomaly??0).toFixed(3)+' · Umbral '+(prediction.threshold??0).toFixed(3):'');flash(label);if(label==='uncertain'){st.pending=result;$('correctionCard').hidden=false;$('presenceState').textContent='Requiere confirmación'}else{$('correctionCard').hidden=true;$('presenceState').textContent=auto?'Pieza inspeccionada':'Inspección manual'}if(!auto){bump(label);await storeHistory({id:id(),at:Date.now(),label,score:prediction.score,batch:$('batch').value,operator:$('operator').value,thumb:result.thumb,error:label==='uncertain'})}else{st.pendingAuto={...result,label,score:prediction.score}}}catch(e){toast(e.message)}finally{st.busy=false;refresh()}}
 async function autoTick(){if(!st.auto||st.busy||st.autoBusy||!ready())return;st.autoBusy=true;try{const c=capture(),q=quality(c);qualityUI(q);if(q.values.m<18||q.values.m>245||!q.motion){$('presenceState').textContent='Esperando luz estable';return}/* [MEJORA-36] Prefiltro 32×32 evita inferencia CNN sobre banda vacía. */
 const fastEmpty=st.bgTiny&&pixDiff(tiny(c),st.bgTiny)<6;
-const emb=fastEmpty?null:embedding(c);const bg=fastEmpty?1:presence(emb),isEmpty=bg!==null&&bg>=Math.max(.90,Number($('minSimilarity').value))&&q.motion;st.emptyRun=isEmpty?st.emptyRun+1:0;st.presentRun=!isEmpty&&q.motion?st.presentRun+1:0;if(isEmpty){$('presenceState').textContent='Fondo vacío';if(st.emptyRun>=MIN_EMPTY){if(st.pieceRecorded&&st.pendingAuto){const h=st.pendingAuto;bump(h.label);await storeHistory({id:id(),at:Date.now(),label:h.label,score:h.score,batch:$('batch').value,operator:$('operator').value,thumb:h.thumb,error:h.label==='uncertain'})}st.pieceRecorded=false;st.pendingAuto=null;st.pending=null;$('correctionCard').hidden=true}}else{$('presenceState').textContent=q.motion?'Pieza detectada':'Esperando estabilidad';if(st.presentRun>=MIN_STABLE&&!st.pieceRecorded){st.pieceRecorded=true;await inspect(true)}}}catch(e){toast('Escaneo interrumpido: '+e.message);stopAuto()}finally{st.autoBusy=false;refresh()}}
+const emb=fastEmpty?null:embedding(c);const bg=fastEmpty?1:presence(emb),isEmpty=bg!==null&&bg>=Math.max(.90,Number($('minSimilarity').value))&&q.motion;st.emptyRun=isEmpty?st.emptyRun+1:0;st.presentRun=!isEmpty&&q.motion?st.presentRun+1:0;if(isEmpty){$('presenceState').textContent='Fondo vacío';if(st.emptyRun>=MIN_EMPTY){hideOperatorVerdict();if(st.pieceRecorded&&st.pendingAuto){const h=st.pendingAuto;bump(h.label);await storeHistory({id:id(),at:Date.now(),label:h.label,score:h.score,batch:$('batch').value,operator:$('operator').value,thumb:h.thumb,error:h.label==='uncertain'})}st.pieceRecorded=false;st.pendingAuto=null;st.pending=null;$('correctionCard').hidden=true}}else{$('presenceState').textContent=q.motion?'Pieza detectada':'Esperando estabilidad';if(st.presentRun>=MIN_STABLE&&!st.pieceRecorded){st.pieceRecorded=true;await inspect(true)}}}catch(e){toast('Escaneo interrumpido: '+e.message);stopAuto()}finally{st.autoBusy=false;refresh()}}
 function stopAuto(){st.auto=false;clearInterval(st.loop);st.loop=null;st.presentRun=st.emptyRun=0;refresh()}
 function startAuto(){if(st.auto){stopAuto();return}if(!ready()){toast('Completa las metas OK/KO y captura un fondo vacío primero.');return}st.auto=true;st.pieceRecorded=false;st.pendingAuto=null;st.emptyRun=st.presentRun=0;st.lastGray=null;st.loop=setInterval(autoTick,Number($('scanSpeed').value));refresh()}
 /* [MEJORA-13] Aprendizaje activo y correcciones persistidas. */
@@ -402,7 +359,84 @@ on('clearBtn','click',async()=>{if(!confirm('¿Eliminar toda la calibración gua
 on('soundBtn','click',()=>{st.silent=!st.silent;$('soundBtn').textContent=st.silent?'♫':'♪';toast(st.silent?'Sonidos desactivados.':'Sonidos activados. El audio requiere interacción con la pantalla.')});on('themeBtn','click',()=>{const light=document.documentElement.dataset.theme!=='light';document.documentElement.dataset.theme=light?'light':'dark';$('themeColor').content=light?'#f6f7fa':'#10141b'});
 on('flipBtn','click',async()=>{st.facing=st.facing==='user'?'environment':'user';stopCamera();await startCamera()});on('torchBtn','click',async()=>{st.torch=!st.torch;await constrain({torch:st.torch})});on('focusBtn','click',()=>constrain({focusMode:'manual',exposureMode:'manual'}));on('zoom','input',e=>constrain({zoom:Number(e.target.value)}));
 on('fullscreenBtn','click',()=>{const on=$('viewer').classList.toggle('full');$('fullscreenBtn').textContent=on?'Salir de pantalla completa':'Expandir visor';drawGuide()});on('fullExit','click',()=>{$('viewer').classList.remove('full');drawGuide()});on('scanSpeed','change',()=>{if(st.auto){stopAuto();startAuto()}});
-new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAuto()});window.addEventListener('pagehide',stopCamera);buildTabs();restore();refresh();
+new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAuto()});window.addEventListener('pagehide',stopCamera);initOperatorUI();restore();refresh();
+
+/* Interfaz Operario/Supervisor separada de los cálculos de visión. */
+let uiMode='manual',uiPinIntent='unlock',uiPane='cal';
+function u(id){return document.getElementById(id)}
+function hideOperatorVerdict(){u('verdictPanel').classList.remove('visible')}
+function presentOperatorVerdict(label,score){
+ const p=u('verdictPanel');if(!label){hideOperatorVerdict();return}
+ p.className='visible'+(label==='ko'?' ko':label==='uncertain'?' uncertain':'');
+ u('vIcon').textContent=label==='ok'?'✓':label==='ko'?'✕':'?';
+ u('vText').textContent=label==='ok'?'BUENA':label==='ko'?'DEFECTO':'REVISAR';
+ u('vScore').textContent=score===null?'':Math.round(score*100)+'%';
+ u('fixButtons').hidden=label!=='uncertain';
+ u('operStatus').textContent=label==='uncertain'?'Confirma el resultado':st.auto?'Quita la pieza':'Retira la pieza';
+ if(navigator.vibrate)navigator.vibrate(label==='ko'?[80,60,80]:[40]);
+}
+function updateOperator(){
+ u('lotName').textContent=u('batch').value||'Sin lote';
+ u('shiftNumbers').textContent=st.count+' · '+st.koCount+' KO';
+ u('operPrimary').textContent=!st.stream?'Activar cámara':!ready()?'Falta calibrar':st.auto?'Detener':uiMode==='automatic'?'Iniciar auto':'Inspeccionar';
+ u('operMissing').hidden=!st.stream||ready();
+ u('modoManual').setAttribute('aria-pressed',String(uiMode==='manual'));
+ u('modoAuto').setAttribute('aria-pressed',String(uiMode==='automatic'));
+ if(!u('superScreen').hidden)updateCalibrationWizard();
+}
+const originalRefresh=refresh;
+refresh=function(){originalRefresh();updateOperator()};
+async function pinHash(pin,salt){const data=new TextEncoder().encode(salt+':'+pin),hash=await crypto.subtle.digest('SHA-256',data);return Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('')}
+function savedPin(){try{return JSON.parse(localStorage.getItem('vqc_super_pin'))}catch(e){return null}}
+function requestSupervisor(){uiPinIntent='unlock';u('pinOverlay').hidden=false;u('pinInput').value='';u('pinMessage').textContent='';u('pinTitle').textContent=savedPin()?'PIN supervisor':'Configurar PIN supervisor';u('pinHint').textContent=savedPin()?'Introduce el PIN de cuatro dígitos.':'Crea un PIN de cuatro dígitos.';u('pinInput').focus()}
+async function verifyPin(){const pin=u('pinInput').value;if(!/^\d{4}$/.test(pin)){u('pinMessage').textContent='Se requieren cuatro números.';return}const saved=savedPin();
+ if(!saved||uiPinIntent==='change'){const salt=crypto.randomUUID?.()||String(Date.now());localStorage.setItem('vqc_super_pin',JSON.stringify({salt,hash:await pinHash(pin,salt)}));u('pinOverlay').hidden=true;if(uiPinIntent==='unlock')showSupervisor('cal');return}
+ if(await pinHash(pin,saved.salt)===saved.hash){u('pinOverlay').hidden=true;showSupervisor('cal')}else u('pinMessage').textContent='PIN incorrecto.';
+}
+function repositionViewer(target){target.append(u('viewer'));requestAnimationFrame(async()=>{if(st.stream){try{const v=u('video');if(v.srcObject!==st.stream)v.srcObject=st.stream;await v.play();u('empty').hidden=true}catch(e){u('operStatus').textContent='Pulsa activar cámara para reanudar'}}drawGuide()})}
+function showSupervisor(pane){stopAuto();u('operScreen').hidden=true;u('superScreen').hidden=false;u('accessMenu').hidden=true;setSupervisorPane(pane)}
+function leaveSupervisor(){u('superScreen').hidden=true;u('operScreen').hidden=false;repositionViewer(u('operVideo'));updateOperator()}
+function setSupervisorPane(pane){uiPane=pane;for(const [key,id] of [['cal','calPane'],['turn','turnPane'],['settings','settingsPane']])u(id).hidden=key!==pane;document.querySelectorAll('[data-pane]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===pane)));if(pane==='cal')repositionViewer(u('calViewer'));updateCalibrationWizard()}
+function updateCalibrationWizard(){
+ if(uiPane!=='cal')return;const bg=count('bg'),ok=count('ok'),ko=count('ko'),n=needs(),stage=!bg?0:ok<n.ok?1:ko<n.ko&&!patchEnabled()?2:3;
+ [...u('calSteps').children].forEach((x,i)=>x.classList.toggle('active',i===Math.min(stage,2)));
+ u('calCount').textContent=stage===0?'Registrar fondo':stage===1?ok+' de '+n.ok:stage===2?ko+' de '+n.ko:'Listo para producir ✓';
+ u('calHelp').textContent=stage===0?'Retira las piezas.':stage===1?'Coloca una pieza buena desde distintos ángulos.':stage===2?'Coloca una pieza defectuosa.':'Puedes empezar a inspeccionar.';
+ u('calFill').style.width=(stage===0?0:stage===1?10+45*ok/n.ok:stage===2?55+45*ko/n.ko:100)+'%';
+ u('calCapture').textContent=!st.stream?'Activar cámara':!st.model?'Cargando IA…':stage===3?'Terminar':'Capturar';
+ u('calDone').hidden=stage!==3;
+}
+async function captureCal(){if(!st.stream){await startCamera();return}if(!st.model){await modelLoad();return}const n=needs(),label=!count('bg')?'bg':count('ok')<n.ok?'ok':count('ko')<n.ko&&!patchEnabled()?'ko':null;if(!label){leaveSupervisor();return}u('calCapture').disabled=true;try{await add(label)}finally{u('calCapture').disabled=false;updateCalibrationWizard()}}
+async function undoCal(){const list=st.records.filter(r=>!r.synthetic);const last=list[list.length-1];if(!last)return;await transaction(STORE,'readwrite',o=>o.delete(last.id));st.records=st.records.filter(r=>r.id!==last.id);st.validationKey='';if(last.label==='bg')st.bgTiny=null;refresh()}
+function closeTurn(){if(!confirm('¿Cerrar turno y reiniciar contadores?'))return;const shifts=JSON.parse(localStorage.getItem('vqc_turns')||'[]');shifts.push({at:new Date().toISOString(),...loadCounts(),batch:u('batch').value});localStorage.setItem('vqc_turns',JSON.stringify(shifts));localStorage.setItem(COUNTS_KEY,JSON.stringify({n:0,ko:0}));st.count=st.koCount=0;refresh()}
+function initOperatorUI(){
+ // Mantenemos los controles de ML originales y montamos el mismo vídeo en ambas pantallas.
+ u('turnPane').append(u('productionCard'),u('historyCard'));
+ u('settingsContent')?.append();
+ u('settingsPane').append(u('cameraCard'));
+ const advanced=document.createElement('details');advanced.className='card';advanced.innerHTML='<summary>Avanzado</summary>';
+ for(const id of ['autoThreshold','minSimilarity','minMargin','validation']){const el=u(id);if(el)advanced.append(el.closest('.field')||el)}
+ u('settingsPane').append(advanced,u('training'),u('soundBtn'),u('themeBtn'),u('flipBtn'));
+ u('training').hidden=false;
+ u('operMenu').onclick=()=>u('accessMenu').hidden=!u('accessMenu').hidden;
+ u('accessSupervisor').onclick=requestSupervisor;
+ u('goSuper').onclick=requestSupervisor;
+ u('pinBack').onclick=()=>u('pinOverlay').hidden=true;
+ u('pinOK').onclick=verifyPin;u('pinInput').onkeydown=e=>{if(e.key==='Enter')verifyPin()};
+ u('exitSuper').onclick=leaveSupervisor;
+ document.querySelectorAll('[data-pane]').forEach(b=>b.onclick=()=>setSupervisorPane(b.dataset.pane));
+ u('modoManual').onclick=()=>{uiMode='manual';if(st.auto)stopAuto();updateOperator()};
+ u('modoAuto').onclick=()=>{uiMode='automatic';updateOperator()};
+ u('operPrimary').onclick=async()=>{if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){startAuto();return}u('operStatus').textContent='Analizando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
+ u('calCapture').onclick=captureCal;u('calUndo').onclick=undoCal;u('calDone').onclick=leaveSupervisor;
+ u('fixGood').onclick=()=>{u('correctOK').click();hideOperatorVerdict()};
+ u('fixBad').onclick=()=>{u('correctKO').click();hideOperatorVerdict()};
+ u('closeTurn').onclick=closeTurn;
+ u('setPin').onclick=()=>{uiPinIntent='change';u('pinOverlay').hidden=false;u('pinInput').value='';u('pinTitle').textContent='Crear nuevo PIN'};
+ u('batch').oninput=updateOperator;
+ repositionViewer(u('operVideo'));
+}
+
 })();
 </script>
 </body></html>
