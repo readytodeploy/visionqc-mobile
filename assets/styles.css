@@ -1,0 +1,113 @@
+
+
+:root{color-scheme:dark;--bg:#090c12;--surface:#191f29;--surface2:#29313e;--line:#445060;--fg:#fff;--sub:#c3cbd7;--ok:#30d158;--ko:#ff453a;--warn:#ffd60a;--accent:#0a84ff;--ink:#fff;font:17px/1.35 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg)}button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation;border:0}button:disabled{opacity:.45}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[hidden]{display:none}
+.app{min-height:100dvh}.top{height:calc(48px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top) 16px 0}.brand{font-size:20px;font-weight:750}.brand small{display:none}.topActions{display:flex;gap:8px}.iconBtn{min-height:48px;min-width:48px;border-radius:12px;background:var(--surface);color:var(--fg)}
+#operScreen{height:100dvh;display:flex;flex-direction:column;background:#090c12;overflow:hidden}
+#operHead{height:calc(48px + env(safe-area-inset-top));flex:none;display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top) 16px 0;font-size:17px}
+#operHead b{font-size:17px;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#operHead span{font-weight:700}#operMenu{background:transparent;color:white;width:48px;height:48px;font-size:27px}
+#operStatus{height:32px;flex:none;display:grid;place-items:center;font-size:15px;color:#e3e8f1;text-align:center;padding:0 12px}
+#operVideo{position:relative;flex:1;min-height:0;background:#080c12}
+.viewer{position:relative;background:#080c12;overflow:hidden;width:100%;height:100%;margin:0;border:0}
+.viewer video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.viewer canvas.overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+.viewer .empty{position:absolute;inset:0;display:grid;place-items:center;background:#19212b;color:white;text-align:center;padding:24px}.viewer .empty[hidden]{display:none}
+.viewer .chips,.viewer .viewerBadge,.viewer .result,.viewer .hint,.viewer .fullExit{display:none}
+#operActions{flex:none;background:#090c12;padding:8px 16px calc(12px + env(safe-area-inset-bottom))}
+.segment{background:#232b37;display:grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:14px;margin-bottom:8px}
+.segment button{min-height:44px;background:transparent;color:#cbd2dd;border-radius:11px;font-weight:700}.segment button[aria-pressed=true]{background:#fff;color:#111827}
+.primary{min-height:64px;width:100%;border-radius:20px;background:#0a84ff;color:white;font-size:19px;font-weight:750}
+#verdictPanel{position:absolute;z-index:10;left:0;right:0;bottom:0;min-height:220px;height:34%;background:#30d158;color:#06190e;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:translateY(105%);transition:transform .2s ease-out;text-align:center;padding:12px}
+#verdictPanel.visible{transform:translateY(0)}#verdictPanel.ko{background:#ff453a;color:#210300}#verdictPanel.uncertain{background:#ffd60a;color:#201800}
+#vIcon{font-size:72px;font-weight:850;line-height:1}#vText{font-size:clamp(48px,11vw,66px);font-weight:850;letter-spacing:-1px}#vScore{font-size:15px;font-weight:700}
+#fixButtons{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:8px}#fixButtons button{min-height:64px;background:#101820;color:white;border-radius:15px;font-weight:700}
+#operMissing{position:absolute;bottom:12px;left:12px;right:12px;background:#192332;color:white;padding:15px;border:1px solid #506071;border-radius:16px;text-align:center}#operMissing button{min-height:48px;border-radius:12px;background:#343f50;color:white;width:100%}
+#superScreen{min-height:100dvh;padding-bottom:calc(85px + env(safe-area-inset-bottom));background:var(--bg);color:var(--fg)}
+#superHead{min-height:calc(58px + env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top) 16px 0;border-bottom:1px solid var(--line)}#superHead b{font-size:25px}#exitSuper{background:transparent;color:#76bbff;min-height:48px;font-weight:700}
+.superPane{padding:16px;max-width:600px;margin:auto}.superPane h2{font-size:28px;margin:5px 0 14px}.superPane p{color:var(--sub);font-size:15px}
+#calViewer{height:clamp(240px,40dvh,420px);overflow:hidden;border-radius:16px;margin:10px 0;position:relative;background:#080c12}
+.calSteps{display:flex;gap:8px;margin:12px 0}.calSteps span{flex:1;background:var(--surface2);padding:10px 3px;border-radius:12px;text-align:center;font-size:13px;font-weight:700}.calSteps .active{background:var(--accent);color:white}
+.calProgress{height:8px;border-radius:8px;background:var(--surface2);overflow:hidden;margin:12px 0}.calProgress i{height:100%;width:0;background:var(--accent);display:block;transition:width .2s ease-out}
+#calCount{font-size:23px;font-weight:800;margin:10px 0}#calCapture{margin:12px 0}
+.secondary,.button{min-height:48px;background:var(--surface2);color:var(--fg);border:1px solid var(--line);border-radius:15px;padding:10px 14px;font-weight:700}.secondary{width:100%}
+#superTabs{position:fixed;bottom:0;left:0;right:0;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line)}
+#superTabs button{min-height:55px;border-radius:12px;background:transparent;color:var(--sub);font-size:14px;font-weight:700}#superTabs button[aria-selected=true]{background:var(--surface2);color:var(--fg)}
+.card{background:var(--surface);border:1px solid var(--line);padding:16px;border-radius:18px;margin:12px 0}.card h2{font-size:18px;margin:0 0 9px}.muted,.notice{color:var(--sub);font-size:13px}
+.field{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;border-bottom:1px solid var(--line)}.field label{flex:1}.field input:not([type=checkbox]),.field select{background:var(--surface2);color:var(--fg);max-width:145px;min-height:44px;border:1px solid var(--line);border-radius:12px;padding:8px}.field input[type=checkbox]{height:24px;width:24px}
+.row,.two{display:flex;gap:8px;justify-content:space-between;align-items:center}.two>*{flex:1}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stats>div{padding:15px 7px;background:var(--surface2);border-radius:15px}.stats b{font-size:26px;display:block}.stats small{font-size:12px;color:var(--sub)}
+.log{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:none}.item{background:var(--surface2);border-radius:14px;padding:8px;min-width:0}.item img{width:100%;height:100px;object-fit:cover;border-radius:10px}.item .details{overflow-wrap:anywhere;font-size:13px}.item .details small{display:block}.tag{color:var(--ok)}.tag.ko{color:var(--ko)}
+#legacyHost{display:none}#superSettings details{margin-top:10px}#superSettings summary{min-height:48px;padding:12px;color:var(--fg);font-weight:700}
+#accessMenu{position:fixed;top:calc(52px + env(safe-area-inset-top));right:12px;background:#273141;border:1px solid #566273;border-radius:15px;padding:8px;z-index:50}#accessMenu button{background:none;color:white;min-height:48px;padding:8px 20px}
+#pinOverlay{position:fixed;inset:0;z-index:80;background:#0b1018;display:grid;place-items:center;padding:20px}#pinBox{background:#202938;border-radius:20px;padding:24px;width:min(100%,390px)}#pinBox h2{font-size:27px;margin:0}#pinBox p{font-size:15px;color:#d0d9e5}#pinBox input{width:100%;height:64px;text-align:center;font-size:31px;letter-spacing:8px;background:#111824;color:white;border:1px solid #748196;border-radius:15px;margin:15px 0}
+#pinOverlay[hidden],#accessMenu[hidden],#operScreen[hidden],#superScreen[hidden],#operMissing[hidden],#fixButtons[hidden],#calPane[hidden],#turnPane[hidden],#settingsPane[hidden]{display:none}
+#toast{position:fixed;z-index:60;top:calc(60px + env(safe-area-inset-top));left:12px;right:12px;background:#2c3542;color:#fff;padding:13px;border-radius:13px}
+@media(orientation:landscape) and (max-height:570px){#verdictPanel{height:85%;min-height:145px}#vIcon{font-size:45px}#vText{font-size:48px}#operActions{padding-top:4px}.segment{margin-bottom:4px}}
+@media(prefers-reduced-motion:reduce){*{transition:none;animation:none}}
+
+
+/* Refinamiento iOS: superficies neutras y componentes con peso óptico consistente */
+:root{--bg:#090b10;--surface:#181c24;--surface2:#252b36;--line:#363e4b;--sub:#b9c1cc}
+#operScreen{background:#080a0e}
+#operHead{padding-left:22px;padding-right:16px;background:#10141b}
+#operHead b{font-size:15px;font-weight:650;letter-spacing:-.2px}
+#operHead span{font-size:14px;font-weight:650;color:#d7dce4}
+#operMenu{font-size:23px;width:44px;height:44px}
+#operStatus{background:#10141b;color:#c8d0dd;font-size:14px;letter-spacing:-.1px}
+#operVideo{background:#080a0e;isolation:isolate}
+#operVideo .viewer{position:absolute;inset:0}
+#operVideo .viewer .empty{background:#10151c}
+#operVideo .viewer .empty b{font-size:19px;font-weight:650}
+#operVideo .viewer .empty p{max-width:235px;font-size:14px;line-height:1.45;opacity:.78}
+#operActions{padding:12px 20px calc(14px + env(safe-area-inset-bottom));background:#10141b}
+.segment{background:#222832;border-radius:14px;padding:3px;margin-bottom:12px}
+.segment button{min-height:43px;color:#b9c3ce;font-size:15px}
+.segment button[aria-pressed=true]{background:#f3f4f6;color:#151b26}
+.primary{background:#0a84ff;border-radius:17px;min-height:60px;font-size:17px;font-weight:700;letter-spacing:-.2px}
+#verdictPanel{position:absolute;top:auto;bottom:0;left:0;right:0;min-height:0;height:min(32%,260px);z-index:12;pointer-events:none;padding:12px 20px}
+#verdictPanel[hidden]{display:none}
+#verdictPanel.visible{pointer-events:auto}
+#verdictPanel:not(.visible){transform:translateY(105%)}
+#vIcon{font-size:60px;line-height:1}
+#vText{font-size:clamp(48px,10vw,60px);line-height:1.08}
+#vScore{font-size:14px}
+#fixButtons:not([hidden]){display:grid}
+#fixButtons[hidden]{display:none}
+#superScreen{background:#f5f5f7;color:#161b23;--surface:#ffffff;--surface2:#ebeef2;--line:#dce1e8;--fg:#151b25;--sub:#5b6573;color-scheme:light}
+#superHead{background:#f5f5f7;border-bottom:1px solid #e2e5ea;padding-left:20px;padding-right:20px}
+#superHead b{font-size:21px;letter-spacing:-.5px}
+#exitSuper{color:#007aff}
+.superPane{padding:20px 16px}
+.superPane h2{font-size:27px;letter-spacing:-.8px;font-weight:740}
+.superPane p{font-size:14px}
+#calViewer{background:#111721;border:1px solid #dfe3e9;border-radius:18px;height:clamp(260px,42dvh,420px)}
+.calSteps span{background:#e6eaf0;color:#495361;font-size:12px}
+.calSteps span.active{background:#e5f2ff;color:#0657a4}
+#calCount{font-size:22px;letter-spacing:-.5px}
+#calCapture{margin-top:12px}
+.secondary,.button{background:#fff;color:#252c36;border:1px solid #d6dce5;min-height:50px}
+.card{background:white;border:1px solid #e1e5eb;box-shadow:none;border-radius:18px}
+#superTabs{background:#fff;border-top:1px solid #e1e5eb}
+#superTabs button{font-size:13px;color:#647081}
+#superTabs button[aria-selected=true]{background:#eef4fb;color:#0867c9}
+#pinOverlay{background:#090b10e8;z-index:100;align-items:center}
+#pinBox{background:#1d232d;border:1px solid #394453;max-width:350px;padding:25px;border-radius:22px}
+#pinBox h2{font-size:24px}
+#pinBox input{font-size:25px;height:56px;letter-spacing:10px}
+#pinBox .primary{min-height:52px}
+#operMissing{bottom:14px;background:#202936;border-radius:18px;padding:18px;z-index:11}
+@media(prefers-reduced-motion:reduce){#verdictPanel{transition:none}}
+
+
+/* Ajustes visibles y organizados con controles táctiles iOS. */
+#trainingSettings .field{min-height:62px}
+#trainingSettings input[type=number]{width:90px;text-align:center;font-size:18px;font-weight:700}
+#settingsContent .card{margin:12px 0}
+#settingsContent .card h2{font-size:18px;font-weight:740;margin-bottom:8px}
+#settingsContent .card .button,#settingsContent .card .iconBtn{min-height:48px;margin:4px}
+#settingsContent #clearBtn{width:100%;color:#c32831}
+#operStatus{font-size:14px;font-weight:580}
+#operPrimary{font-weight:750}
+#operHead{height:calc(54px + env(safe-area-inset-top))}
+#operVideo .viewer .empty p{font-size:14px}
+#operMissing p{font-size:15px;font-weight:650}
+#operMissing button{background:#0a84ff;font-size:15px;font-weight:700;min-height:52px}
