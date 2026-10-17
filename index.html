@@ -21,6 +21,25 @@
 .quality{display:flex;gap:6px;margin:9px 14px 0;flex-wrap:wrap}.quality span{flex:1;min-width:85px;text-align:center;border:1px solid var(--line);border-radius:12px;padding:8px 5px;color:var(--sub);font-size:11px}.quality strong{color:var(--fg)}.quality .fail{color:var(--warn)}.card{margin:12px 14px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:18px}.card h2{font-size:16px;margin:0 0 8px;letter-spacing:-.25px}.muted{color:var(--sub);font-size:12px}.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.button{border:1px solid var(--line);border-radius:14px;background:var(--surface2);color:var(--fg);padding:10px 14px;font-weight:700}.button.primary{background:var(--accent);color:var(--ink);border-color:var(--accent)}.button.good{border-color:var(--ok);color:var(--ok)}.button.bad{border-color:var(--ko);color:var(--ko)}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.meter{font-size:12px;margin-top:7px}.meter .track{height:6px;background:var(--surface2);border-radius:7px;overflow:hidden;margin:5px 0}.meter .track>i{display:block;height:100%;background:var(--ok);width:0}.meter.bad .track>i{background:var(--ko)}.field{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;color:var(--sub);font-size:13px}.field input:not([type=checkbox]),.field select{width:125px;background:var(--surface2);border:1px solid var(--line);color:var(--fg);border-radius:12px;padding:10px;min-height:44px}.field input[type=range]{accent-color:var(--ok)}.field input[type=checkbox]{width:22px;height:22px;accent-color:var(--ok)}.small{font-size:11px}.notice{border:1px solid var(--line);border-radius:13px;margin-top:8px;padding:10px;font-size:12px;color:var(--sub)}.notice.error{color:var(--ko)}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stats div{padding:11px;background:var(--surface2);border-radius:12px}.stats b{font-size:21px;display:block}.stats small{font-size:11px;color:var(--sub)}.log{max-height:260px;overflow:auto}.item{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding:9px 0}.item img{width:46px;height:46px;border-radius:10px;object-fit:cover}.item .details{flex:1;font-size:12px}.item .details small{display:block;color:var(--sub)}.tag{font-weight:800;color:var(--ok)}.tag.ko{color:var(--ko)}.tag.uncertain{color:var(--warn)}details>summary{min-height:48px;cursor:pointer;font-weight:700;display:flex;align-items:center;padding:6px 0}.actionbar{position:fixed;z-index:10;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--line);padding:11px max(14px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));display:flex;gap:10px;justify-content:center}.actionbar>button{height:57px;border-radius:17px;font-size:15px}.actionbar .mainAction{flex:2;max-width:350px}.actionbar .modeAction{flex:1;max-width:160px}.toast{position:fixed;z-index:50;top:calc(54px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(92vw,450px);padding:12px;border-radius:15px;background:#392519;color:#ffe3ba;font-size:13px;box-shadow:0 8px 28px #0005}.toast[hidden],.hidden{display:none!important}.feedback{display:flex;gap:8px;margin-top:9px}.feedback button{flex:1}.viewer.full{position:fixed;z-index:20;inset:0;margin:0;border-radius:0;width:100vw;height:100dvh}.viewer.full .hint{bottom:calc(95px + env(safe-area-inset-bottom))}.fullExit{display:none;position:absolute;right:12px;bottom:12px;min-height:45px;border:0;border-radius:14px;color:white;background:#1a2532e6;padding:10px 15px}.viewer.full .fullExit{display:block}
 @media(orientation:landscape) and (max-height:570px){.viewer{height:60dvh}.viewer.full{height:100dvh}.app{padding-bottom:105px}.result{bottom:8px;left:25%;transform:translateX(-50%)}.viewer .hint{bottom:8px;left:54%;right:8px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* [MEJORA-21] Navegación móvil por tareas: cuatro pestañas, una cámara compartida y una sola jerarquía visual. */
+.app{padding-bottom:calc(162px + env(safe-area-inset-bottom))}
+.tab-pane[hidden]{display:none!important}.tab-pane{min-width:0}
+.tabs{position:fixed;z-index:29;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);gap:4px;box-shadow:0 -6px 20px #0002}
+.tabs button{min-height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:0;border-radius:13px;background:transparent;color:var(--sub);font-size:11px;font-weight:650}
+.tabs button .glyph{font-size:21px;line-height:22px}.tabs button[aria-selected=true]{background:var(--surface2);color:var(--fg)}
+.actionbar{bottom:calc(70px + env(safe-area-inset-bottom));padding:8px 14px;background:var(--bg);border:0;box-shadow:0 -8px 22px #0002}
+.actionbar[hidden]{display:none!important}
+#calibrationPanel .viewer,#calibrationPanel .quality{margin-bottom:12px}
+#training{margin-top:14px}#training .two{margin-top:12px}
+#training .two button{min-height:58px;font-size:15px}
+.tab-caption{padding:4px 6px 12px}.tab-caption h1{font-size:23px;letter-spacing:-.6px;margin:5px 0}.tab-caption p{margin:0;color:var(--sub);font-size:13px}
+#tab-calibration .viewer{height:32dvh;min-height:235px;max-height:350px}#tab-calibration .result{font-size:13px}
+#tab-camera .card,#tab-production .card{margin-top:12px}
+#tab-camera .button,#tab-production .button{min-height:48px}
+body[data-tab=calibration] .app{padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+body[data-tab=production] .app,body[data-tab=camera] .app{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+@media(orientation:landscape) and (max-height:570px){.tabs{grid-template-columns:repeat(4,1fr)}.tabs button{min-height:45px;flex-direction:row}.actionbar{bottom:calc(62px + env(safe-area-inset-bottom))}#tab-calibration .viewer{height:45dvh}}
 </style>
 </head>
 <body><main class="app">
@@ -30,12 +49,17 @@
 <div class="quality"><span id="lightQuality">Luz: —</span><span id="sharpQuality">Nitidez: —</span><span id="motionQuality">Movimiento: —</span></div>
 <div class="card" id="training"><div class="row"><h2>Calibración guiada</h2><span class="muted" id="trainingBadge">0 muestras</span></div><p class="muted" id="coach">Primero registra el fondo vacío. Después captura ejemplos variados de piezas correctas y defectuosas.</p><button class="button" id="backgroundBtn" disabled>Registrar fondo vacío</button><div class="field"><label for="targetOK">Objetivo de muestras OK</label><input id="targetOK" type="number" min="1" max="200" value="10"></div><div class="field"><label for="targetKO">Objetivo de muestras KO</label><input id="targetKO" type="number" min="1" max="200" value="10"></div><div class="meter"><div class="row"><span>Correctas</span><b id="okN">0 / 10</b></div><div class="track"><i id="okBar"></i></div></div><div class="meter bad"><div class="row"><span>Defectuosas</span><b id="koN">0 / 10</b></div><div class="track"><i id="koBar"></i></div></div><div class="two"><button class="button good" id="addOK" disabled>＋ Guardar OK</button><button class="button bad" id="addKO" disabled>＋ Guardar KO</button></div><div class="field"><label for="augmentation">Aumento sintético ligero</label><input id="augmentation" type="checkbox"></div><div class="notice" id="validation">La validación interna estará disponible cuando cada clase tenga al menos 5 muestras.</div><div class="field"><label for="autoThreshold">Usar umbrales sugeridos</label><input type="checkbox" id="autoThreshold" checked></div><div class="field"><label for="minSimilarity">Similitud mínima</label><input type="number" id="minSimilarity" min="0.3" max="1" step="0.01" value="0.80" disabled></div><div class="field"><label for="minMargin">Separación mínima</label><input type="number" id="minMargin" min="0" max="0.5" step="0.005" value="0.035" disabled></div><div class="notice small">Los indicadores son similitudes, no probabilidades calibradas. Valida con un conjunto independiente antes de usar resultados en producción.</div></div>
 <div class="card" id="correctionCard" hidden><h2>Lectura incierta</h2><p class="muted">¿Cuál era la etiqueta real de esta pieza? Tu corrección se incorporará al conjunto de entrenamiento.</p><div class="feedback"><button class="button good" id="correctOK">Era OK</button><button class="button bad" id="correctKO">Era KO</button></div></div>
-<div class="card"><div class="row"><h2>Producción</h2><button class="button" id="fullscreenBtn">Expandir visor</button></div><div class="stats"><div><b id="countAll">0</b><small>Inspecciones</small></div><div><b id="countBad">0</b><small>Defectos</small></div><div><b id="rate">0%</b><small>Tasa KO</small></div></div><div class="field"><label for="batch">Lote</label><input type="text" id="batch" maxlength="50" placeholder="Opcional"></div><div class="field"><label for="operator">Operario</label><input type="text" id="operator" maxlength="50" placeholder="Opcional"></div><div class="field"><label for="scanSpeed">Frecuencia de evaluación</label><select id="scanSpeed"><option value="500">Hasta 2 fps</option><option value="333">Hasta 3 fps</option><option value="900">Ahorro de batería</option></select></div></div>
-<div class="card"><details id="historyDetails"><summary>Historial y exportaciones</summary><div class="row"><select id="historyFilter" aria-label="Filtrar historial"><option value="all">Todos</option><option value="ok">OK</option><option value="ko">KO</option><option value="error">Errores y correcciones</option></select><button class="button" id="csvBtn">Exportar CSV</button></div><div id="history" class="log"></div><div class="two"><button class="button" id="exportBtn">Exportar calibración</button><button class="button" id="importBtn">Importar calibración</button></div><input type="file" id="fileImport" accept="application/json,.json" hidden><button class="button" id="clearBtn" style="width:100%;margin-top:10px">Borrar calibración</button></details></div>
-<div class="card"><details><summary>Configuración de cámara</summary><div class="row"><button class="button" id="torchBtn" disabled>Linterna no disponible</button><button class="button" id="focusBtn" disabled>Bloquear enfoque/exposición</button></div><div class="field" id="zoomBox" hidden><label for="zoom">Zoom</label><input id="zoom" type="range" min="1" max="3" step="0.1" value="1"></div><p class="muted">Los controles físicos solo aparecen cuando Safari y la cámara permiten su uso.</p></details></div>
+<div class="card" id="productionCard"><div class="row"><h2>Producción</h2><button class="button" id="fullscreenBtn">Expandir visor</button></div><div class="stats"><div><b id="countAll">0</b><small>Inspecciones</small></div><div><b id="countBad">0</b><small>Defectos</small></div><div><b id="rate">0%</b><small>Tasa KO</small></div></div><div class="field"><label for="batch">Lote</label><input type="text" id="batch" maxlength="50" placeholder="Opcional"></div><div class="field"><label for="operator">Operario</label><input type="text" id="operator" maxlength="50" placeholder="Opcional"></div><div class="field"><label for="scanSpeed">Frecuencia de evaluación</label><select id="scanSpeed"><option value="500">Hasta 2 fps</option><option value="333">Hasta 3 fps</option><option value="900">Ahorro de batería</option></select></div></div>
+<div class="card" id="historyCard"><details id="historyDetails"><summary>Historial y exportaciones</summary><div class="row"><select id="historyFilter" aria-label="Filtrar historial"><option value="all">Todos</option><option value="ok">OK</option><option value="ko">KO</option><option value="error">Errores y correcciones</option></select><button class="button" id="csvBtn">Exportar CSV</button></div><div id="history" class="log"></div><div class="two"><button class="button" id="exportBtn">Exportar calibración</button><button class="button" id="importBtn">Importar calibración</button></div><input type="file" id="fileImport" accept="application/json,.json" hidden><button class="button" id="clearBtn" style="width:100%;margin-top:10px">Borrar calibración</button></details></div>
+<div class="card" id="cameraCard"><details open><summary>Configuración de cámara</summary><div class="row"><button class="button" id="torchBtn" disabled>Linterna no disponible</button><button class="button" id="focusBtn" disabled>Bloquear enfoque/exposición</button></div><div class="field" id="zoomBox" hidden><label for="zoom">Zoom</label><input id="zoom" type="range" min="1" max="3" step="0.1" value="1"></div><p class="muted">Los controles físicos solo aparecen cuando Safari y la cámara permiten su uso.</p></details></div>
 <div class="toast" id="toast" role="alert" hidden></div>
-<nav class="actionbar" aria-label="Acciones de inspección"><button class="button primary mainAction" id="mainBtn">Activar cámara</button><button class="button modeAction" id="autoBtn" disabled>▶ Auto</button></nav>
-<canvas id="frame" hidden></canvas>
+<nav class="actionbar" id="inspectionActions" aria-label="Acciones de inspección"><button class="button primary mainAction" id="mainBtn">Activar cámara</button><button class="button modeAction" id="autoBtn" disabled>▶ Auto</button></nav>
+<nav class="tabs" id="tabNav" role="tablist" aria-label="Secciones">
+<button type="button" role="tab" id="tab-button-visor" aria-controls="tab-visor" aria-selected="true" data-tab="visor"><span class="glyph" aria-hidden="true">▣</span>Visor</button>
+<button type="button" role="tab" id="tab-button-calibration" aria-controls="tab-calibration" aria-selected="false" data-tab="calibration"><span class="glyph" aria-hidden="true">◎</span>Calibración</button>
+<button type="button" role="tab" id="tab-button-production" aria-controls="tab-production" aria-selected="false" data-tab="production"><span class="glyph" aria-hidden="true">▤</span>Producción</button>
+<button type="button" role="tab" id="tab-button-camera" aria-controls="tab-camera" aria-selected="false" data-tab="camera"><span class="glyph" aria-hidden="true">⚙</span>Cámara</button>
+</nav><canvas id="frame" hidden></canvas>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
@@ -102,8 +126,56 @@ function csv(){const lines=[['fecha','resultado','similitud','lote','operario','
 /* [MEJORA-14] Exportación e importación con validación de esquema. */
 function exportData(){download(JSON.stringify({version:3,date:new Date().toISOString(),records:st.records,targets:needs()},null,2),'visionqc-calibracion.json','application/json')}
 async function importData(file){try{const obj=JSON.parse(await file.text());if(obj.version!==3||!Array.isArray(obj.records)||obj.records.length>1500)throw Error('Formato de calibración inválido.');for(const r of obj.records){if(!['ok','ko','bg'].includes(r.label)||!Array.isArray(r.emb)||r.emb.length!==PARTS||!r.emb.every(p=>Array.isArray(p)&&p.length>0&&p.every(Number.isFinite)))throw Error('Vectores inválidos.')}for(const r of obj.records){r.id=id();await storeRecord(r)}if(obj.targets){$('targetOK').value=limit(obj.targets.ok);$('targetKO').value=limit(obj.targets.ko)}toast('Calibración importada.');refresh()}catch(e){toast('Error al importar: '+e.message)}}
+
+/* [MEJORA-22] Cuatro espacios de trabajo sin recrear video o modelo al cambiar de sección. */
+let currentTab='visor';
+function buildTabs(){
+ const header=document.querySelector('header.top');
+ const parent=header.parentElement;
+ const panes={};
+ for(const name of ['visor','calibration','production','camera']){
+  const pane=document.createElement('section');pane.id='tab-'+name;pane.className='tab-pane';pane.setAttribute('role','tabpanel');pane.setAttribute('aria-labelledby','tab-button-'+name);pane.hidden=name!=='visor';
+  parent.insertBefore(pane,$('inspectionActions'));panes[name]=pane;
+ }
+ const viewer=$('viewer'),quality=document.querySelector('.quality');
+ panes.visor.append(document.querySelector('.step'),document.querySelector('.progress'),viewer,quality,$('correctionCard'));
+ const heading=document.createElement('div');heading.className='tab-caption';heading.innerHTML='<h1>Entrenamiento guiado</h1><p>Enfoca, registra el fondo y añade muestras OK y KO. La cámara permanece activa.</p>';
+ panes.calibration.append(heading,$('training'));
+ panes.production.append($('productionCard'),$('historyCard'));
+ panes.camera.append($('cameraCard'));
+ const speed=$('scanSpeed').closest('.field');panes.camera.append(speed);
+ const fs=$('fullscreenBtn');fs.parentElement.removeChild(fs);panes.visor.insertBefore(fs,panes.visor.querySelector('.step'));
+ const history=$('historyDetails');history.open=true;
+ $('cameraCard').querySelector('details').open=true;
+ const calibrationHint=document.createElement('p');calibrationHint.className='muted';calibrationHint.id='trainingInstruction';calibrationHint.textContent='1. Activa la cámara · 2. Captura el fondo vacío · 3. Registra muestras correctas y defectuosas.';
+ panes.calibration.insertBefore(calibrationHint,$('training'));
+ document.querySelectorAll('#tabNav [role=tab]').forEach(button=>button.addEventListener('click',()=>selectTab(button.dataset.tab)));
+ selectTab('visor');
+}
+/* [MEJORA-23] El visor físico se reutiliza entre inspección y calibración. */
+function selectTab(name){
+ if(!['visor','calibration','production','camera'].includes(name))return;
+ if(name!=='visor'&&st.auto)stopAuto();
+ currentTab=name;document.body.dataset.tab=name;
+ const pane=$('tab-'+name);
+ if(name==='visor'||name==='calibration'){
+  const host=name==='visor'?pane:$('training');
+  const viewer=$('viewer'),quality=document.querySelector('.quality');
+  if(name==='calibration'){host.prepend(quality);host.prepend(viewer)}
+  else{const step=pane.querySelector('.progress');step.after(viewer);viewer.after(quality)}
+ }
+ for(const tab of ['visor','calibration','production','camera']){
+  $('tab-'+tab).hidden=tab!==name;
+  $('tab-button-'+tab).setAttribute('aria-selected',String(tab===name));
+ }
+ $('inspectionActions').hidden=name!=='visor';
+ if(name==='calibration')$('trainingInstruction').textContent=!st.stream?'Activa la cámara en Visor y vuelve aquí para entrenar.':count('bg')===0?'Paso 1: deja el recuadro vacío y pulsa «Registrar fondo vacío».':!trained()?'Paso 2: coloca una pieza, elige OK o KO y repite hasta completar las metas.':'Calibración lista. Ve a Visor para inspeccionar las piezas.';
+ window.scrollTo({top:0,behavior:'instant'});
+ requestAnimationFrame(drawGuide);
+}
+
 function on(id,ev,fn){$(id).addEventListener(ev,fn)}
-on('mainBtn','click',async()=>{if(!st.stream){await startCamera();return}if(!st.model){await modelLoad();return}if(!trained()){$('training').scrollIntoView({behavior:'smooth',block:'start'});toast('Registra fondo, muestras OK y KO hasta completar las metas.');return}await inspect(false)});
+on('mainBtn','click',async()=>{if(!st.stream){await startCamera();return}if(!st.model){await modelLoad();return}if(!trained()){selectTab('calibration');toast('Registra fondo, muestras OK y KO hasta completar las metas.');return}await inspect(false)});
 on('autoBtn','click',startAuto);on('backgroundBtn','click',()=>add('bg'));on('addOK','click',()=>add('ok'));on('addKO','click',()=>add('ko'));on('correctOK','click',()=>correct('ok'));on('correctKO','click',()=>correct('ko'));
 on('targetOK','change',()=>{localStorage.setItem('vqc_ok',limit($('targetOK').value));refresh()});on('targetKO','change',()=>{localStorage.setItem('vqc_ko',limit($('targetKO').value));refresh()});
 on('autoThreshold','change',()=>{const manual=!$('autoThreshold').checked;$('minSimilarity').disabled=$('minMargin').disabled=!manual;refresh()});on('historyFilter','change',historyUI);on('csvBtn','click',csv);on('exportBtn','click',exportData);on('importBtn','click',()=>$('fileImport').click());on('fileImport','change',e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value=''});
@@ -111,7 +183,7 @@ on('clearBtn','click',async()=>{if(!confirm('¿Eliminar toda la calibración gua
 on('soundBtn','click',()=>{st.silent=!st.silent;$('soundBtn').textContent=st.silent?'♫':'♪';toast(st.silent?'Sonidos desactivados.':'Sonidos activados. El audio requiere interacción con la pantalla.')});on('themeBtn','click',()=>{const light=document.documentElement.dataset.theme!=='light';document.documentElement.dataset.theme=light?'light':'dark';$('themeColor').content=light?'#f6f7fa':'#10141b'});
 on('flipBtn','click',async()=>{st.facing=st.facing==='user'?'environment':'user';stopCamera();await startCamera()});on('torchBtn','click',async()=>{st.torch=!st.torch;await constrain({torch:st.torch})});on('focusBtn','click',()=>constrain({focusMode:'manual',exposureMode:'manual'}));on('zoom','input',e=>constrain({zoom:Number(e.target.value)}));
 on('fullscreenBtn','click',()=>{const on=$('viewer').classList.toggle('full');$('fullscreenBtn').textContent=on?'Salir de pantalla completa':'Expandir visor';drawGuide()});on('fullExit','click',()=>{$('viewer').classList.remove('full');drawGuide()});on('scanSpeed','change',()=>{if(st.auto){stopAuto();startAuto()}});
-new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAuto()});window.addEventListener('pagehide',stopCamera);restore();refresh();
+new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAuto()});window.addEventListener('pagehide',stopCamera);buildTabs();restore();refresh();
 })();
 </script>
 </body></html>
