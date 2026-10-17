@@ -111,3 +111,22 @@
 #operVideo .viewer .empty p{font-size:14px}
 #operMissing p{font-size:15px;font-weight:650}
 #operMissing button{background:#0a84ff;font-size:15px;font-weight:700;min-height:52px}
+
+/* Indicadores de regiones sospechosas y confirmación rápida tipo arcade, sin distraer la cámara. */
+#defectMarkers{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.defectMarker{position:absolute;width:48px;height:48px;border:3px solid #ff453a;border-radius:50%;transform:translate(-50%,-50%);display:grid;place-items:center;background:#ff453a24;color:#fff;font-size:24px;font-weight:900;text-shadow:0 1px 2px #000}
+#gameHint{order:-1;font-size:12px;font-weight:800;letter-spacing:2px;margin-bottom:5px}
+#fixButtons{width:100%;gap:10px;margin-top:10px}
+#fixButtons button{min-height:70px;border:2px solid #16202a;border-radius:18px;background:#152333;color:#fff;font-size:17px;font-weight:800}
+#fixButtons button.chosen{background:#30d158;color:#07140a}
+#operHead{background:#0d1118;border-bottom:1px solid #27313d}
+#operHead>div{display:flex;align-items:center;gap:10px}
+#lotName{font-size:15px;font-weight:700}
+#shiftNumbers{padding:7px 10px;border-radius:10px;background:#202936;font-size:13px}
+#operMenu{background:#222b38;border-radius:13px;width:44px;height:44px;font-weight:800}
+#settingsContent{display:flex;flex-direction:column;gap:12px}
+#settingsContent>.card{margin:0;border-radius:20px}
+#settingsContent .card h2{font-size:19px;letter-spacing:-.3px}
+#settingsContent .field{min-height:60px}
+#settingsContent .muted{line-height:1.45}
+@media(prefers-reduced-motion:no-preference){.defectMarker{animation:markerPulse 1.3s ease-out infinite}@keyframes markerPulse{50%{box-shadow:0 0 0 8px #ff453a30}}}
