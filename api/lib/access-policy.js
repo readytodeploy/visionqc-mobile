@@ -8,7 +8,7 @@ function authorize(req,res){
  }
  if(!enforced())return true;
  const password=process.env.VQC_ACCESS_PASSWORD;
- if(process.env.VQC_REMOTE_ENABLED!=='true'||!password||password.length<20){
+ if(!password||password.length<20){
   res.status(503).json({error:'Inspeção remota bloqueada até configurar o acesso seguro.'});return false;
  }
  const header=req.headers?.authorization||'';
@@ -24,29 +24,20 @@ function authorize(req,res){
  }
  return true;
 }
-// A single atomic reservation across every deployment/instance sharing this Redis.
-const SCRIPT=`local m=tonumber(redis.call('GET',KEYS[1]) or '0')
-local d=tonumber(redis.call('GET',KEYS[2]) or '0')
-if m>=tonumber(ARGV[1]) then return {0,redis.call('TTL',KEYS[1])} end
-if d>=tonumber(ARGV[2]) then return {0,redis.call('TTL',KEYS[2])} end
-if redis.call('INCR',KEYS[1])==1 then redis.call('EXPIRE',KEYS[1],ARGV[3]) end
-if redis.call('INCR',KEYS[2])==1 then redis.call('EXPIRE',KEYS[2],ARGV[4]) end
-return {1,0}`;
+// Best-effort limits in this warm function instance, not a global spending cap.
+let minuteWindow=-1,dayWindow=-1,minuteCount=0,dayCount=0;
 function limit(name,fallback,max){const n=Number(process.env[name]||fallback);if(!Number.isInteger(n)||n<1||n>max)throw Error();return n;}
 async function reserve(res){
  if(!enforced())return true;
  try{
-  const endpoint=new URL(process.env.UPSTASH_REDIS_REST_URL);
-  if(endpoint.protocol!=='https:'||!endpoint.hostname.endsWith('.upstash.io')||endpoint.username||endpoint.password||endpoint.pathname!=='/'||endpoint.search||endpoint.hash)throw Error();
-  const token=process.env.UPSTASH_REDIS_REST_TOKEN;if(!token)throw Error();
   const minute=limit('VQC_REQUESTS_PER_MINUTE',6,60),day=limit('VQC_REQUESTS_PER_DAY',60,1000);
   const now=Math.floor(Date.now()/1000),m=Math.floor(now/60),d=Math.floor(now/86400);
-  const response=await fetch(endpoint.href,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(['EVAL',SCRIPT,'2','vqc:inspection:minute:'+m,'vqc:inspection:day:'+d,String(minute),String(day),String(60-now%60),String(86400-now%86400)]),signal:AbortSignal.timeout(3000)});
-  if(!response.ok)throw Error();
-  const data=await response.json(),r=data.result;
-  if(data.error||!Array.isArray(r)||r.length!==2||![0,1].includes(r[0])||!Number.isFinite(r[1]))throw Error();
-  if(r[0]===0){res.setHeader('Retry-After',String(Math.max(1,r[1])));res.status(429).json({error:'Limite compartilhado de inspeções atingido. Aguarde antes de tentar novamente.'});return false;}
-  return true;
- }catch{res.status(503).json({error:'Controle de consumo indisponível. Captura remota bloqueada para proteger os créditos.'});return false;}
+  if(minuteWindow!==m){minuteWindow=m;minuteCount=0;}
+  if(dayWindow!==d){dayWindow=d;dayCount=0;}
+  const retry=dayCount>=day?86400-now%86400:minuteCount>=minute?60-now%60:0;
+  if(retry){res.setHeader('Retry-After',String(retry));res.status(429).json({error:'Limite temporário de inspeções atingido. Aguarde antes de tentar novamente.'});return false;}
+  // No await between checking and reserving: concurrent requests in this instance share counts.
+  minuteCount++;dayCount++;return true;
+ }catch{res.status(503).json({error:'Limites de inspeção inválidos. Verifique a configuração do servidor.'});return false;}
 }
 module.exports={authorize,reserve};
