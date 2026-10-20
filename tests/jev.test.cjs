@@ -1,10 +1,13 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const handler=require('../api/jev.js');const {normalize}=require('../api/lib/jev-policy');
-const fixture=()=>({model:'jev-1.14.0',answers:{decision:{type:'choice',choice:'defect',confidence:.95},defect_type:{type:'choice',choice:'seam',confidence:.9},defect_box:{type:'box',box:{left:.1,top:.2,right:.7,bottom:.8},confidence:.9}}});
+const fixture=()=>({model:'jev-1.14.0',answers:{capture_quality:{type:'choice',choice:'usable',confidence:.95},object_scope:{type:'choice',choice:'matches',confidence:.95},evidence:{type:'choice',choice:'physical',confidence:.95},decision:{type:'choice',choice:'defect',confidence:.95},defect_type:{type:'choice',choice:'seam',confidence:.9},defect_box:{type:'box',box:{left:.1,top:.2,right:.7,bottom:.8},confidence:.9}}});
 function jpeg(width=448,height=448){const b=Buffer.from([255,216,255,192,0,8,8,0,0,0,0,1,255,217]);b.writeUInt16BE(height,7);b.writeUInt16BE(width,9);return 'data:image/jpeg;base64,'+b.toString('base64');}
 test('Jev never treats an unconditional Box as evidence of a defect',()=>{
  let d=fixture();assert.equal(normalize(d).verdict,'defect');assert.ok(normalize(d).box);
  for(const choice of ['clear','uncertain']){d=fixture();d.answers.decision.choice=choice;const result=normalize(d);assert.equal(result.verdict,'review');assert.equal(result.box,null);assert.equal(result.production_ready,false);}
+ for(const [question,choice] of [['capture_quality','blur'],['capture_quality','no_object'],['object_scope','different'],['evidence','artifact'],['evidence','normal_variation']]){d=fixture();d.answers[question].choice=choice;const result=normalize(d);assert.equal(result.verdict,'review');assert.equal(result.box,null);assert.ok(result.reviewReason);}
+ d=fixture();delete d.answers.evidence;assert.throws(()=>normalize(d));
+ d=fixture();d.answers.capture_quality.confidence=.5;assert.equal(normalize(d).box,null);
  d=fixture();d.answers.decision.confidence=.5;assert.equal(normalize(d).box,null);
  d=fixture();d.answers.defect_type.choice='none';assert.equal(normalize(d).verdict,'review');
  d=fixture();d.answers.defect_box.box.right=2;assert.equal(normalize(d).box,null);
@@ -26,7 +29,7 @@ test('Jev API validates payloads and fixed destination; sanitizes errors and pre
   assert.equal((await request('POST',{profile:'jev',image:jpeg()},{host:'localhost:8766',origin:'https://other.example'})).code,403);assert.equal(calls,0);
   const result=await request('POST',{profile:'jev',image:jpeg(),objectName:'Tecido',criteria:'Falhas de costura'});
   assert.equal(result.code,200);assert.equal(result.body.image.width,448);assert.equal(result.body.experimental,true);assert.ok(!JSON.stringify(result.body).includes('test-only-secret'));
-  assert.equal(payload.model,'jev-1.14.0');assert.equal(payload.state.object,'Tecido');assert.equal(Object.keys(payload.assets).length,1);
+  assert.equal(result.body.promptVersion,'inspection-v2');assert.equal(Object.keys(payload.questions).length,6);assert.ok(payload.state.inspection_policy.scenarios.length>=5);assert.equal(payload.questions.capture_quality.type,'choice');assert.equal(payload.questions.defect_box.type,'box');assert.equal(payload.model,'jev-1.14.0');assert.equal(payload.state.object,'Tecido');assert.equal(Object.keys(payload.assets).length,1);
   global.fetch=async()=>({ok:false,status:401,json:async()=>({error:'test-only-secret'})});const error=await request('POST',{profile:'jev',image:jpeg()});assert.equal(error.code,502);assert.ok(!JSON.stringify(error).includes('test-only-secret'));
   global.fetch=async()=>({ok:true,json:async()=>({answers:{}})});assert.equal((await request('POST',{profile:'jev',image:jpeg()})).code,502);
   for(const status of [402,403,429]){let attempts=0;global.fetch=async()=>{attempts++;return {ok:false,status}};assert.equal((await request('POST',{profile:'jev',image:jpeg()})).code,status);assert.equal(attempts,1);}

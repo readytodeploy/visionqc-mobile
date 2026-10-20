@@ -361,11 +361,11 @@ async function inspectJev(){
  const label=data.verdict==='defect'?'ko':'uncertain';
  newResult(label,data.confidence);
  u('vText').textContent=label==='ko'?'POSSÍVEL DEFEITO':'REVISAR PEÇA';
- u('vScore').textContent=(data.assessment==='clear'?'Sem defeito aparente':label==='ko'?data.defectType:'Resultado inconclusivo')+' · Jev experimental';
+ u('vScore').textContent=(label==='ko'?data.defectType:(data.reviewReason||'Resultado inconclusivo; revise a peça'))+' · Jev experimental';
  let summary=u('remoteSummary');if(!summary){summary=document.createElement('div');summary.id='remoteSummary';u('verdictPanel').append(summary)}
  summary.replaceChildren();const message=document.createElement('p');message.textContent='Revise a peça antes de decidir. '+(data.box?'Localização sugerida pelo modelo.':'Sem localização confiável.');summary.append(message);
  u('inspectAgain').hidden=false;
- bump(label);await storeHistory({id:id(),at:Date.now(),label,score:data.confidence,batch:u('batch').value,operator:u('operator').value,thumb:section.toDataURL('image/jpeg',.55),error:label==='uncertain',provider:'jev',model:data.model,assessment:data.assessment,experimental:true});
+ bump(label);await storeHistory({id:id(),at:Date.now(),label,score:data.confidence,batch:u('batch').value,operator:u('operator').value,thumb:section.toDataURL('image/jpeg',.55),error:label==='uncertain',provider:'jev',model:data.model,assessment:data.assessment,promptVersion:data.promptVersion,captureQuality:data.captureQuality,objectScope:data.objectScope,evidence:data.evidence,reviewReason:data.reviewReason,experimental:true});
 }
 function showRemoteBoxes(predictions,image,snapshot){
  const previous=u('inspectionSnapshot');if(previous)previous.remove();
@@ -670,7 +670,9 @@ function initOperatorUI(){
  jevSettings.innerHTML='<div class="field"><label for="jevObject">Objeto inspecionado</label><input id="jevObject" type="text" maxlength="80" placeholder="Ex.: capa de almofada"></div><div class="field"><label for="jevCriteria">Defeitos a verificar</label><textarea id="jevCriteria" maxlength="600" rows="3"></textarea></div><p class="muted">Ao capturar, apenas a região dentro da moldura será enviada diretamente à TypeSafe AI. O uso depende dos créditos e limites da conta. Sem defeito aparente não significa peça aprovada.</p><p id="jevConnection" role="status" class="muted"></p>';
  modelCard.append(jevSettings);
  u('jevObject').value=localStorage.getItem('vqc_jev_object')||'Peça de tecido';
- u('jevCriteria').value=localStorage.getItem('vqc_jev_criteria')||'Manchas, rasgos, furos e falhas de costura. Não confundir estampa e textura com defeitos.';
+ const savedJevCriteria=localStorage.getItem('vqc_jev_criteria');
+ const oldJevDefaults=['Manchas, rasgos, furos e falhas de costura. Não confundir estampa e textura com defeitos.','Manchas, rasgos, furos e falhas de costura'];
+ u('jevCriteria').value=savedJevCriteria&&!oldJevDefaults.includes(savedJevCriteria)?savedJevCriteria:'Verificar manchas, rasgos/furos, costuras abertas ou com pontos rompidos, fios soltos e falhas localizadas de trama ou acabamento. Considerar defeito apenas a irregularidade física claramente visível no objeto. Aceitar estampa, textura, costura intencional e dobras normais. Em caso de dúvida, reflexo ou falta de nitidez, solicitar revisão. Adapte a lista e informe tolerâncias específicas do seu produto.';
  for(const [id,key] of [['jevObject','vqc_jev_object'],['jevCriteria','vqc_jev_criteria']])u(id).oninput=()=>localStorage.setItem(key,u(id).value);
  if(jevEnabled())checkJevStatus();
  syncEvaluationModel();

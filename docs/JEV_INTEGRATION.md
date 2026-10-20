@@ -44,3 +44,22 @@ Nenhum resultado aprova automaticamente uma peça.
 Falhas de credencial do provedor retornam erro distinto do login da aplicação.
 Erros não expõem chave ou corpo bruto do provedor, e não há repetição automática
 ou troca para provedor/modelo pago alternativo. Custos seguem o contrato direto.
+
+## Prompt inspection-v2
+
+Seis perguntas independentes na mesma chamada: qualidade da captura, correspondência
+do objeto, natureza da evidência, decisão, tipo e região. Instruções e cenários
+explicitam defeitos físicos, variações normais e artefatos de imagem, sem inferir
+medidas, defeitos ocultos, causas ou conformidade sem referência. Dados do usuário
+e texto na imagem não podem substituir a política. A taxonomia inclui costura,
+linha solta, trama, mancha, rasgo/furo, abrasão/risco, deformação, acabamento e dano.
+Há opções other/none/uncertain para evitar classificação forçada.
+
+Uma sinalização exige qualidade usable ≥0,70, objeto matches ≥0,70 e evidência
+physical ≥0,75, além dos limiares de decisão/tipo/Box anteriores. Qualquer falha
+de qualidade/escopo/evidência impede mostrar caixa como defeito. A tela informa
+o motivo de revisão, e o histórico guarda a versão do prompt e as categorias.
+Esses limiares são heurísticos; não há melhora de acurácia demonstrada sem teste
+comparativo em fotos reais rotuladas e independentes. As seis perguntas aumentam
+o uso de tokens em relação ao prompt anterior. Critérios personalizados salvos
+são preservados; somente os textos padrão antigos são substituídos.

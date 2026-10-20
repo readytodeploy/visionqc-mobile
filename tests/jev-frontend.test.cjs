@@ -10,7 +10,7 @@ test('Jev captures ROI, avoids local training, renders review safely, and permit
   count++;lastBody=JSON.parse(options.body);
   if(count===1)await new Promise(resolve=>{release=resolve;});
   if(count===3)return {ok:false,status:401,json:async()=>({error:'Acesso restrito. Informe a senha em Configurações.'})};
-  return {ok:true,json:async()=>({model:'jev-1.14.0',assessment:count===1?'clear':'defect',verdict:count===1?'review':'defect',confidence:.95,defectType:'Falha de costura',box:count===1?null:{left:.1,top:.2,right:.5,bottom:.7},experimental:true,production_ready:false})};
+  return {ok:true,json:async()=>({model:'jev-1.14.0',assessment:count===1?'clear':'defect',verdict:count===1?'review':'defect',reviewReason:count===1?'Refaça a captura: imagem desfocada.':null,confidence:.95,defectType:'Falha de costura',box:count===1?null:{left:.1,top:.2,right:.5,bottom:.7},experimental:true,production_ready:false})};
  };
  w.eval(fs.readFileSync('js/jev-client.js','utf8'));w.eval(fs.readFileSync('js/app.js','utf8'));await new Promise(r=>setImmediate(r));
  el('evaluationModel').value='jev';el('evaluationModel').dispatchEvent(new w.Event('change'));await new Promise(r=>setImmediate(r));
@@ -23,7 +23,7 @@ test('Jev captures ROI, avoids local training, renders review safely, and permit
  release();await pending;
  assert.equal(el('operPrimary').disabled,false);assert.equal(el('operStatus').dataset.state,'result');
  assert.equal(count,1);assert.equal(lastBody.profile,'jev');assert.equal(el('frame').width,448);assert.equal(el('frame').height,448);
- assert.equal(el('vText').textContent,'REVISAR PEÇA');assert.equal(el('remoteBoxes').children.length,0);assert.ok(el('inspectionSnapshot'));assert.equal(el('inspectionSnapshot').style.width,'288px');
+ assert.equal(el('vText').textContent,'REVISAR PEÇA');assert.match(el('vScore').textContent,/imagem desfocada/);assert.ok(!el('vScore').textContent.includes('Sem defeito aparente'));assert.equal(el('remoteBoxes').children.length,0);assert.ok(el('inspectionSnapshot'));assert.equal(el('inspectionSnapshot').style.width,'288px');
  await el('operPrimary').onclick();assert.equal(count,1);assert.equal(el('verdictPanel').hidden,true);assert.equal(el('inspectionSnapshot'),null);
  await el('operPrimary').onclick();assert.equal(count,2);assert.equal(el('vText').textContent,'POSSÍVEL DEFEITO');assert.equal(el('remoteBoxes').children.length,1);
  assert.equal(el('remoteBoxes').firstChild.style.left,'84.8px');
