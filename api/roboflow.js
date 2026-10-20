@@ -6,7 +6,8 @@ module.exports=async function handler(req,res){
  if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'Método no permitido'});}
  const key=process.env.ROBOFLOW_API_KEY;
  if(!key)return res.status(503).json({error:'Roboflow no está configurado. Define ROBOFLOW_API_KEY en Vercel.'});
- const {image,confidence=50}=req.body||{};
+ const {image,confidence=50,profile='mdf'}=req.body||{};
+ if(profile!=='mdf')return res.status(409).json({error:'Modelo indisponível para este produto: é necessário treinar e validar um modelo específico.'});
  if(typeof image!=='string'||image.length>1_800_000||!/^data:image\/jpeg;base64,[a-zA-Z0-9+/=]+$/.test(image))return res.status(400).json({error:'Envía un JPEG válido de menos de 1,3 MB'});
  const threshold=Number(confidence);
  if(!Number.isFinite(threshold)||threshold<5||threshold>95)return res.status(400).json({error:'Confianza fuera de rango (5-95)'});
