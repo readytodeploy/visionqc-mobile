@@ -386,3 +386,10 @@
 #inspectionAccessStatus[data-state="success"]{color:#15803d;font-weight:600}
 #inspectionAccessStatus[data-state="error"]{color:#b91c1c;font-weight:600}
 @media(prefers-color-scheme:dark){#inspectionAccessStatus[data-state="success"]{color:#86efac}#inspectionAccessStatus[data-state="error"]{color:#fca5a5}}
+
+/* Capture feedback stays below the camera, including errors after the toast expires. */
+#operActions #operStatus{position:static;display:none;width:auto;height:auto;min-height:0;max-height:none;margin:0 0 10px;padding:10px 12px;border:1px solid #334155;border-radius:10px;overflow:visible;clip-path:none;white-space:normal;text-align:left;font-size:13px;line-height:1.4;color:#e2e8f0;background:#18212f}
+#operActions #operStatus[data-state]{display:block}
+#operActions #operStatus[data-state="error"]{border-color:#b45353;color:#fecaca;background:#321b24}
+#operActions #operStatus[data-state="pending"]{border-color:#3b82f6;color:#bfdbfe}
+#operPrimary[aria-busy="true"]{opacity:.8;cursor:wait}
