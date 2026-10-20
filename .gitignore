@@ -1,3 +1,15 @@
 .DS_Store
 node_modules/
 .vercel/
+datasets/
+artifacts/
+.venv/
+__pycache__/
+*.keras
+*.h5
+*.onnx
+*.pt
+*.pth
+.env
+.env.*
+!.env.example
