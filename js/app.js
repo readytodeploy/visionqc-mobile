@@ -315,6 +315,28 @@ function resetManualInspection(){
 }
 /* Map detection cells from normalized product coordinates to the actual viewer ROI.
    Indicators show suspicious image regions, not verified defect boundaries. */
+let accessAttempt=0;
+async function verifyInspectionAccess(){
+ const attempt=++accessAttempt,status=u('inspectionAccessStatus'),button=u('inspectionUnlock'),password=u('inspectionPassword').value;
+ if(!password){status.textContent='Digite a senha de inspeção.';status.dataset.state='error';return;}
+ window.VQCAccess?.unlock(password);u('inspectionPassword').value='';
+ status.textContent='Verificando senha…';status.dataset.state='pending';button.disabled=true;
+ const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),10000);
+ try{
+  const response=await fetch('/api/jev',{headers:window.VQCAccess?.headers()||{},signal:abort.signal});
+  const data=await response.json();if(attempt!==accessAttempt)return;
+  if(!response.ok){
+   window.VQCAccess?.unlock('');status.dataset.state='error';
+   status.textContent=response.status===401?'Senha incorreta. Tente novamente.':response.status===503?'Acesso bloqueado no servidor. Verifique VQC_ACCESS_PASSWORD e VQC_REMOTE_ENABLED em Vercel.':'Não foi possível verificar o acesso. Tente novamente.';
+  }else{
+   status.dataset.state=data.accessVerified?'success':'pending';
+   status.textContent=data.accessVerified?(data.configured?'Acesso liberado. Você já pode testar uma captura com Jev.':'Senha correta. Falta configurar AI_GATEWAY_API_KEY no servidor.'):'Servidor local: a senha não é exigida nem foi validada. Verifique o acesso na versão publicada.';
+  }
+  if(u('jevConnection'))u('jevConnection').textContent=status.textContent;
+ }catch{
+  if(attempt!==accessAttempt)return;window.VQCAccess?.unlock('');status.dataset.state='error';status.textContent='Falha ao verificar a senha. Confira a conexão e tente novamente.';
+ }finally{clearTimeout(timer);button.disabled=false;}
+}
 async function checkJevStatus(){
  const status=u('jevConnection');if(!status)return;
  status.textContent='Verificando conexão com o servidor…';
@@ -460,7 +482,8 @@ function syncEvaluationModel(){
 function updateOperator(){
  if(remoteEnabled()||!profileReady())uiMode='manual';
  u('lotName').textContent=PRODUCT_PROFILES[activeProfile()]?.name||'Produto';
- u('lotDetail').textContent=u('batch').value?'Lote '+u('batch').value:'Sem lote definido';
+ u('lotDetail').textContent=u('batch').value?'Lote '+u('batch').value:'';
+ u('lotDetail').hidden=!u('batch').value;
  u('shiftNumbers').textContent=count('ok')===0&&count('ko')===0&&count('bg')===0?'Sem calibração':st.count+' inspeções · '+st.koCount+' defeitos';
  u('operPrimary').textContent='Capturar';
  u('operMissing').hidden=!profileReady()||remoteEnabled()||!st.stream||ready();if(st.stream&&!ready()&&!remoteEnabled())u('operStatus').textContent=calibrationComplete()?'Confirme o treinamento nas configurações':'Calibração pendente';
@@ -641,8 +664,9 @@ function initOperatorUI(){
  const accessCard=document.createElement('div');accessCard.className='card';
  accessCard.innerHTML='<h2>Acesso à inspeção remota</h2><label for="inspectionPassword">Senha de inspeção</label><input id="inspectionPassword" type="password" autocomplete="off"><button id="inspectionUnlock" type="button">Liberar nesta sessão</button><button id="inspectionLock" type="button">Bloquear acesso</button><p id="inspectionAccessStatus" class="muted" role="status">A senha fica apenas na memória desta página. Recarregar encerra o acesso.</p>';
  u('settingsContent').prepend(accessCard);
- u('inspectionUnlock').addEventListener('click',()=>{window.VQCAccess?.unlock(u('inspectionPassword').value);u('inspectionPassword').value='';u('inspectionAccessStatus').textContent='Senha aplicada; a próxima consulta verificará o acesso.';checkJevStatus();});
- u('inspectionLock').addEventListener('click',()=>{window.VQCAccess?.unlock('');u('inspectionPassword').value='';u('inspectionAccessStatus').textContent='Acesso removido desta página.';});
+ u('inspectionUnlock').addEventListener('click',verifyInspectionAccess);
+ u('inspectionPassword').addEventListener('keydown',e=>{if(e.key==='Enter'&&!u('inspectionUnlock').disabled){e.preventDefault();verifyInspectionAccess();}});
+ u('inspectionLock').addEventListener('click',()=>{accessAttempt++;u('inspectionAccessStatus').dataset.state='pending';window.VQCAccess?.unlock('');u('inspectionPassword').value='';u('inspectionAccessStatus').textContent='Acesso removido desta página.';});
  jevSettings.innerHTML='<div class="field"><label for="jevObject">Objeto inspecionado</label><input id="jevObject" type="text" maxlength="80" placeholder="Ex.: capa de almofada"></div><div class="field"><label for="jevCriteria">Defeitos a verificar</label><textarea id="jevCriteria" maxlength="600" rows="3"></textarea></div><p class="muted">Ao capturar, apenas a região dentro da moldura será enviada pelo Vercel AI Gateway à TypeSafe AI. O uso depende dos créditos e limites da conta. Sem defeito aparente não significa peça aprovada.</p><p id="jevConnection" role="status" class="muted"></p>';
  modelCard.append(jevSettings);
  u('jevObject').value=localStorage.getItem('vqc_jev_object')||'Peça de tecido';

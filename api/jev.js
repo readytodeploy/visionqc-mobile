@@ -1,5 +1,5 @@
 'use strict';
-const {authorize,reserve}=require('./lib/access-policy');
+const {authorize,reserve,requiresAccess}=require('./lib/access-policy');
 const {randomUUID}=require('node:crypto');
 const {normalize,jpegSize}=require('./lib/jev-policy');
 const ENDPOINT='https://ai-gateway.vercel.sh/typesafe/v1/systemone';
@@ -8,7 +8,7 @@ const credential=()=>process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOK
 module.exports=async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
  if(!authorize(req,res))return;
- if(req.method==='GET')return res.status(200).json({configured:Boolean(credential()),provider:'vercel-ai-gateway',model:MODEL,experimental:true});
+ if(req.method==='GET')return res.status(200).json({configured:Boolean(credential()),accessVerified:requiresAccess(),provider:'vercel-ai-gateway',model:MODEL,experimental:true});
  if(req.method!=='POST'){res.setHeader('Allow','GET, POST');return res.status(405).json({error:'Método não permitido'});}
  if(req.headers?.origin&&req.headers?.host){try{if(new URL(req.headers.origin).host!==req.headers.host)return res.status(403).json({error:'Origem não permitida'});}catch{return res.status(403).json({error:'Origem inválida'});}}
  const {image,objectName='Peça de tecido',criteria='Manchas, rasgos, furos e falhas de costura',profile}=req.body||{};

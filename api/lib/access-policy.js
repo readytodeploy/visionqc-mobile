@@ -40,4 +40,4 @@ async function reserve(res){
   minuteCount++;dayCount++;return true;
  }catch{res.status(503).json({error:'Limites de inspeção inválidos. Verifique a configuração do servidor.'});return false;}
 }
-module.exports={authorize,reserve};
+module.exports={authorize,reserve,requiresAccess:enforced};

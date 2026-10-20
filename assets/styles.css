@@ -382,3 +382,7 @@
 #operVideo .viewer .empty p{font-size:13px;font-weight:400;color:#8492a6}
 /* Keep live status announcements without a permanent instruction strip. */
 #operStatus{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+#inspectionAccessStatus[data-state="success"]{color:#15803d;font-weight:600}
+#inspectionAccessStatus[data-state="error"]{color:#b91c1c;font-weight:600}
+@media(prefers-color-scheme:dark){#inspectionAccessStatus[data-state="success"]{color:#86efac}#inspectionAccessStatus[data-state="error"]{color:#fca5a5}}
