@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "defaultProfile": "mdf",
+  "profiles": [
+    {
+      "id": "mdf",
+      "name": "Molduras MDF",
+      "material": "MDF pintado",
+      "status": "ready",
+      "provider": "roboflow",
+      "modelKey": "mdf-v3",
+      "modelLabel": "RF-DETR V3",
+      "classes": [
+        "Defeitos de superfície (classes disponíveis no modelo)"
+      ],
+      "threshold": 50,
+      "notes": "Modelo remoto configurado. Exige verificação de classes, precisão e validação na linha."
+    },
+    {
+      "id": "textile",
+      "name": "Tecidos e revestimentos",
+      "material": "Tecido plano e revestimento",
+      "status": "needs_training",
+      "provider": "roboflow",
+      "modelKey": null,
+      "modelLabel": null,
+      "classes": [
+        "mancha",
+        "rasgo",
+        "fio solto",
+        "falha de trama"
+      ],
+      "threshold": 50,
+      "notes": "Perfil preparado; falta dataset rotulado e modelo validado. Inspeção por IA indisponível."
+    },
+    {
+      "id": "mattress",
+      "name": "Colchões e capas",
+      "material": "Tecido acolchoado / espuma",
+      "status": "needs_training",
+      "provider": "roboflow",
+      "modelKey": null,
+      "modelLabel": null,
+      "classes": [
+        "costura aberta",
+        "mancha",
+        "desalinhamento",
+        "etiqueta ausente"
+      ],
+      "threshold": 50,
+      "notes": "Perfil preparado; faltam imagens reais de colchões conformes e defeituosos."
+    },
+    {
+      "id": "sofa",
+      "name": "Sofás e estofados",
+      "material": "Tecido / couro / estrutura",
+      "status": "needs_training",
+      "provider": "roboflow",
+      "modelKey": null,
+      "modelLabel": null,
+      "classes": [
+        "rasgo",
+        "costura irregular",
+        "mancha",
+        "dobra",
+        "componente ausente"
+      ],
+      "threshold": 50,
+      "notes": "Perfil preparado; deformações estruturais podem exigir mais câmeras ou medição geométrica."
+    }
+  ]
+}
