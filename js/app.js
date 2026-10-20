@@ -550,6 +550,7 @@ function initOperatorUI(){
  u('detectionProvider').value=localStorage.getItem('vqc_detection_provider')||'roboflow';
  u('remoteConfidence').value=localStorage.getItem('vqc_remote_confidence')||'50';
  u('detectionProvider').onchange=()=>{stopAuto();localStorage.setItem('vqc_detection_provider',u('detectionProvider').value);hideOperatorVerdict();updateOperator()};
+ renderProductProfile();
  u('remoteConfidence').onchange=()=>{const n=Math.max(5,Math.min(95,Number(u('remoteConfidence').value)||50));u('remoteConfidence').value=n;localStorage.setItem('vqc_remote_confidence',String(n))};
  const demoCard=document.createElement('div');demoCard.className='card';
  demoCard.innerHTML='<h2>Dataset de demostración</h2><p class="muted">El ejemplo de piezas correctas y defectuosas se instala automáticamente una vez cuando no tienes calibración guardada. Las imágenes de evaluación no se entrenan. Para la cámara necesitas registrar un fondo vacío.</p><input id="demoFile" type="file" accept=".json,application/json" aria-label="Importar otro dataset"><p id="demoImportStatus" class="muted" role="status">Comprobando ejemplos incluidos…</p>';
