@@ -135,7 +135,7 @@ function approveTraining(){
  u('operStatus').textContent='Listo para inspeccionar';
 }
 function calibrationComplete(){return !!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
-function ready(){if(remoteEnabled())return !!st.stream;return approvalValid()&&!!st.stream&&!!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
+function ready(){if(!profileReady())return false;if(remoteEnabled())return !!st.stream;return approvalValid()&&!!st.stream&&!!st.model&&(referenceEnabled()?(count('ok')>=1&&count('bg')>0):patchEnabled()?(count('ok')>=3&&count('bg')>0):trained())}
 function refresh(){const n=needs(),o=count('ok'),k=count('ko'),b=count('bg');$('okN').textContent=`${o} / ${n.ok}`;$('koN').textContent=`${k} / ${n.ko}`;$('okBar').style.width=Math.min(100,o/n.ok*100)+'%';$('koBar').style.width=Math.min(100,k/n.ko*100)+'%';$('trainingBadge').textContent=`${o+k} piezas · ${b?'Fondo ✓':'Fondo pendiente'}`;const stage=!st.stream?1:!ready()?2:3; if(patchEnabled()){buildPatchBank();$('patchStatus').textContent='PatchCore Lite · '+patchState.referenceCount+' muestras OK · '+patchState.bank.length+' parches · Umbral '+patchState.threshold.toFixed(3);}$('stepLabel').textContent=`PASO ${stage} / 3`;$('stepText').textContent=stage===1?'Ativar câmera':stage===2?'Calibrar IA':'Inspeccionar piezas';$('stepProgress').style.width=(stage===1?0:stage===2?33+57*Math.min(o/n.ok,k/n.ko):100)+'%';$('mainBtn').textContent=!st.stream?'Ativar câmera':!st.model?'Cargando modelo…':!ready()?'Calibrar piezas':'Capturar pieza';$('mainBtn').disabled=!!st.stream&&!st.model;$('autoBtn').disabled=!ready();$('autoBtn').textContent=st.auto?'■ Detener':'▶ Auto';$('addOK').disabled=$('addKO').disabled=$('backgroundBtn').disabled=!st.model||!st.stream||st.busy;$('coach').textContent=patchEnabled()?(!b?'Captura primero el fondo sin piezas.':o<3?'Registra al menos tres piezas OK desde ángulos y distancias variados.':'Banco PatchCore Lite listo; añade más muestras OK para mejorar la cobertura del producto.'):(!b?'Captura el fondo sin piezas; después añade diferentes ejemplos OK y KO.':o<n.ok||k<n.ko?'Captura el mismo producto de frente, lados, distintas distancias y con defectos localizados. Mantén fondo e iluminación controlados.':'Calibración completada. Comprueba la matriz y utiliza piezas nunca vistas para validar.');validation();historyUI();updateCalibrationCamera()}
 async function modelLoad(){if(st.model||st.loading)return;st.loading=true;$('cameraState').textContent='Cargando IA · 15%';try{if(!window.tf||!window.mobilenet)throw Error('Sin acceso a las bibliotecas CDN. Comprueba la conexión y reintenta.');await tf.ready();$('cameraState').textContent='Cargando modelo · 45%';st.model=await mobilenet.load({version:2,alpha:1});$('cameraState').textContent='Optimizando · 85%';const blank=document.createElement('canvas');blank.width=blank.height=224;const t=st.model.infer(blank,true);await t.data();t.dispose();$('cameraState').textContent='● Cámara e IA listas';refresh()}catch(e){toast(e.message+' Pulsa Activar cámara para reintentar.')}finally{st.loading=false;refresh()}}
 /* [MEJORA-11] Permisos HTTPS, cámara iOS y controles condicionales de capacidades. */
@@ -170,7 +170,7 @@ async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=
  if(remoteEnabled()){
   const video=$('video');if(video.readyState<2)throw new Error('Espera a que la cámara muestre imagen.');
   const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0,c.width,c.height);
-  const data=await window.VQCRoboflow.infer(c,Number(u('remoteConfidence').value));
+  const data=await window.VQCRoboflow.infer(c,Number(u('remoteConfidence').value),activeProfile());
   const label=data.predictions.length?'ko':'uncertain',score=data.predictions.length?Math.max(...data.predictions.map(p=>p.confidence)):null;
   showRemoteBoxes(data.predictions,data.image,c);
   newResult(label,score,data.predictions.length?data.predictions.map(p=>p.class).join(', '):'Nenhum defeito detectado; confirmar visualmente');
@@ -413,12 +413,28 @@ function presentOperatorVerdict(label,score){
  u('operStatus').textContent=label==='uncertain'?'Verifique o resultado':st.auto?'Retire a peça':'Retire a peça';
  if(navigator.vibrate)navigator.vibrate(label==='ko'?[80,60,80]:[40]);
 }
-function remoteEnabled(){return (localStorage.getItem('vqc_detection_provider')||'roboflow')==='roboflow'}
+const PROFILE_KEY='vqc_inspection_profile';
+const PRODUCT_PROFILES={
+ mdf:{name:'Molduras MDF',status:'ready',model:'RF-DETR V3',details:'Modelo configurado. Verifique a precisão com amostras reais.'},
+ textile:{name:'Tecidos e revestimentos',status:'needs_training',details:'Necessário dataset rotulado e treinamento.'},
+ mattress:{name:'Colchões e capas',status:'needs_training',details:'Necessário dataset de colchões e treinamento.'},
+ sofa:{name:'Sofás e estofados',status:'needs_training',details:'Necessário dataset de estofados e treinamento.'}
+};
+function activeProfile(){return localStorage.getItem(PROFILE_KEY)||'mdf'}
+function profileReady(){return PRODUCT_PROFILES[activeProfile()]?.status==='ready'}
+function renderProductProfile(){
+ const select=u('productProfile'),status=u('productProfileStatus');if(!select||!status)return;
+ select.value=activeProfile();const p=PRODUCT_PROFILES[activeProfile()]||PRODUCT_PROFILES.mdf;
+ status.textContent=p.status==='ready'?'Modelo disponível · '+p.model+'. '+p.details:'Aguardando treinamento · '+p.details;
+ status.dataset.status=p.status;
+ const provider=u('detectionProvider');if(provider){provider.disabled=!profileReady();if(profileReady()){provider.value='roboflow';localStorage.setItem('vqc_detection_provider','roboflow')}}
+}
+function remoteEnabled(){return profileReady()&&(localStorage.getItem('vqc_detection_provider')||'roboflow')==='roboflow'}
 function updateOperator(){
- u('lotName').textContent=u('batch').value||'Sem lote';
+ u('lotName').textContent=(PRODUCT_PROFILES[activeProfile()]?.name||'Produto')+' · '+(u('batch').value||'Sem lote');
  u('shiftNumbers').textContent=count('ok')===0&&count('ko')===0&&count('bg')===0?'Sem calibração':st.count+' · '+st.koCount+' defeitos';
- u('operPrimary').textContent=!st.stream?'Ativar câmera':!ready()?'Confirmar calibração':st.auto?'Parar inspeção':u('verdictPanel')&&!u('verdictPanel').hidden?'Nova inspeção':uiMode==='automatic'?'Iniciar automático':'Inspecionar peça';
- u('operMissing').hidden=remoteEnabled()||!st.stream||ready();if(st.stream&&!ready()&&!remoteEnabled())u('operStatus').textContent=calibrationComplete()?'Confirme o treinamento no Supervisor':'Calibração pendente';
+ u('operPrimary').textContent=!profileReady()?'Modelo indisponível':!st.stream?'Ativar câmera':!ready()?'Confirmar calibração':st.auto?'Parar inspeção':u('verdictPanel')&&!u('verdictPanel').hidden?'Nova inspeção':uiMode==='automatic'?'Iniciar automático':'Inspecionar peça';
+ u('operMissing').hidden=!profileReady()||remoteEnabled()||!st.stream||ready();if(st.stream&&!ready()&&!remoteEnabled())u('operStatus').textContent=calibrationComplete()?'Confirme o treinamento no Supervisor':'Calibração pendente';
  u('modoManual').setAttribute('aria-pressed',String(uiMode==='manual'));
  u('modoAuto').setAttribute('aria-pressed',String(uiMode==='automatic'));
  if(!u('superScreen').hidden)updateCalibrationWizard();
@@ -523,6 +539,11 @@ function initOperatorUI(){
  for(const id of ['targetOK','targetKO','augmentation']){const el=u(id);trainSettings.append(el.closest('.field'))}
  const help=document.createElement('p');help.className='muted';help.textContent='Define las imágenes necesarias por clase. Usa distintos ángulos, acercamientos y defectos.';trainSettings.append(help);
  u('settingsContent').prepend(trainSettings);
+ const productCard=document.createElement('div');productCard.className='card';productCard.id='productProfileCard';
+ productCard.innerHTML='<h2>Produto inspecionado</h2><div class="field"><label for="productProfile">Perfil de inspeção</label><select id="productProfile"><option value="mdf">Molduras MDF</option><option value="textile">Tecidos e revestimentos</option><option value="mattress">Colchões e capas</option><option value="sofa">Sofás e estofados</option></select></div><p id="productProfileStatus" role="status"></p><p class="muted">Os modelos são independentes. Perfis sem treinamento não realizam classificação.</p>';
+ u('settingsContent').prepend(productCard);
+ u('productProfile').onchange=()=>{stopAuto();hideOperatorVerdict();localStorage.setItem(PROFILE_KEY,u('productProfile').value);renderProductProfile();updateOperator()};
+ renderProductProfile();
  const providerCard=document.createElement('div');providerCard.className='card';
  providerCard.innerHTML='<h2>Modelo de inspeção</h2><div class="field"><label for="detectionProvider">Provedor</label><select id="detectionProvider"><option value="local">Local · MobileNet / KNN / PatchCore Lite</option><option value="roboflow">Roboflow · RF-DETR V3 (nuvem)</option></select></div><div class="field"><label for="remoteConfidence">Confiança mínima (%)</label><input id="remoteConfidence" type="number" min="5" max="95" step="5" value="50"></div><p class="muted">Roboflow necesita conexión, backend configurado y envía una imagen del producto al servicio. No usa la calibración local. En este modo el resultado sin detecciones significa «sin defecto detectado», no garantía de pieza correcta. Solo inspección manual.</p>';
  u('settingsContent').prepend(providerCard);
@@ -570,7 +591,7 @@ function initOperatorUI(){
  document.querySelectorAll('[data-pane]').forEach(b=>b.onclick=()=>setSupervisorPane(b.dataset.pane));
  u('modoManual').onclick=()=>{uiMode='manual';if(st.auto)stopAuto();updateOperator()};
  u('modoAuto').onclick=()=>{if(remoteEnabled()){toast('Roboflow está disponible solo en modo manual.');return}uiMode='automatic';updateOperator()};
- u('operPrimary').onclick=async()=>{if(st.stream&&!u('verdictPanel').hidden){resetManualInspection();return}if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){if(remoteEnabled()){toast('O modelo Roboflow funciona no modo manual.');return}startAuto();return}u('operStatus').textContent='Analisando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
+ u('operPrimary').onclick=async()=>{if(st.stream&&!u('verdictPanel').hidden){resetManualInspection();return}if(!profileReady()){requestSupervisor();setSupervisorPane('settings');toast('Este produto precisa de treinamento antes da inspeção.');return}if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){if(remoteEnabled()){toast('O modelo Roboflow funciona no modo manual.');return}startAuto();return}u('operStatus').textContent='Analisando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
  const again=document.createElement('button');again.type='button';again.id='inspectAgain';again.className='inspectAgain';again.textContent='Nova inspeção';again.hidden=true;again.onclick=resetManualInspection;u('verdictPanel').append(again);
  u('calCapture').onclick=captureCal;u('calUndo').onclick=undoCal;u('calDone').onclick=approveTraining;
  u('fixGood').onclick=()=>{u('fixGood').classList.add('chosen');u('correctOK').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
