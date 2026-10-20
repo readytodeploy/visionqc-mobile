@@ -27,3 +27,48 @@ O servidor também valida o perfil. Não envie um produto têxtil ao detector de
 - Os recortes e caixas desenhados no navegador indicam localizações previstas pelo modelo, não comprovam defeitos.
 - Não há monitoramento automático contínuo para inferência remota; o Roboflow atual usa captura manual.
 - O arquivo JSON do catálogo é documentação versionada; o frontend espelha metadados mínimos e o backend faz verificação explícita. Futuramente migrar para uma fonte de configuração única com validação de schema.
+
+## Revisão do pipeline de pesquisa (20/10/2026)
+
+A separação por produto e o bloqueio de perfis não treinados devem ser mantidos.
+StitchingNet treina classificação de recortes de costura; não fornece localização
+precisa nem comprova transferência para colchões/estofados. O split anterior
+embaralhava imagens dentro de tecido/classe e não isolava sequências.
+
+O trainer agora audita todas as imagens antes de carregar TensorFlow, exige
+manifesto `path,group` por peça/lote/sessão, isola grupos e rejeita duplicatas
+exatas de pixels entre grupos. Toda partição precisa conter todas as classes.
+A proporção 70/15/15 é por quantidade de grupos, sem garantia de equilíbrio por
+imagem. Falta de cobertura interrompe o treino; não ajuste o split usando o
+resultado do teste. Congele o manifesto antes de experimentar modelos.
+
+A auditoria exige 14.565 imagens válidas, 11 classes e 11 tecidos, conforme a
+publicação, além de dimensões 224×224. Essas contagens são verificações de
+consistência, não prova de autenticidade ou completude sem inventário oficial.
+Estrutura, contagens e nomes de diretório foram auditados no conjunto completo
+(ver `DATASET_AUDIT.md`). Metadados de sequência e imagens quase idênticas
+ainda precisam de revisão. Hashes não detectam
+frames vizinhos. Identificadores de grupo devem vir da aquisição, não de
+numeração presumida de arquivos. Sem metadados confiáveis, não há avaliação
+independente comprovada.
+
+Saídas de pesquisa incluem auditoria, manifests com hashes, matriz de confusão,
+accuracy, macro F1 e precisão/recall/F1, suporte e falsos negativos por classe.
+`production_ready` permanece falso mesmo após gerar métricas. A promoção exige
+licença adequada, critérios de aceitação da fábrica e validação externa por
+produto, material, iluminação, latência e integração real. Nenhum perfil foi ativado.
+
+## Primeiro classificador têxtil experimental
+
+Em 20/10/2026 foi treinado um classificador de 11 classes de costura com tecidos
+inteiros reservados. Accuracy 31,69%, F1 macro 0,2408; resultado insuficiente.
+Ver `TEXTILE_TRAINING_RESULTS.md`. O perfil textil continua bloqueado na aplicação;
+o artefato de pesquisa não foi integrado e não habilita produção.
+
+## Mudança de abordagem: Jev
+
+A integração visual experimental do Jev é uma alternativa remota separada dos
+modelos treinados: ver `JEV_INTEGRATION.md`. Não exige treinar pesos locais.
+Captura somente a região do visor, preserva revisão humana e usa apenas caixas
+retornadas e validadas. Requer chave oficial do servidor; ainda não houve teste
+real com a conta nem validação industrial.

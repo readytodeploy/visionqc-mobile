@@ -67,6 +67,24 @@
       ],
       "threshold": 50,
       "notes": "Perfil preparado; deformações estruturais podem exigir mais câmeras ou medição geométrica."
+    },
+    {
+      "id": "jev",
+      "name": "Jev · inspeção experimental",
+      "material": "Objeto definido pelo usuário",
+      "status": "experimental",
+      "provider": "vercel-ai-gateway",
+      "modelKey": "typesafe-ai/jev-1.14.0",
+      "modelLabel": "Jev 1.14 · imagens e Box experimentais",
+      "classes": [
+        "Falha de costura",
+        "Mancha",
+        "Rasgo ou furo",
+        "Dano de superfície",
+        "Outro defeito",
+        "Indeterminado"
+      ],
+      "notes": "Integração implementada; requer AI_GATEWAY_API_KEY e validação real. Analisa apenas o recorte do visor; nenhuma aprovação automática."
     }
   ]
 }

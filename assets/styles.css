@@ -355,3 +355,30 @@
  #operScreen{grid-template-rows:76px auto minmax(0,1fr) auto}
  #operVideo{grid-row:2/5}
 }
+
+/* Inspection header: product identity and quiet utility controls. */
+#operHead{gap:16px;background:#10151d;border-bottom:1px solid rgba(148,163,184,.12)}
+#operHead>.inspectionIdentity{display:flex;flex:1;min-width:0;align-items:flex-start;justify-content:center;flex-direction:column;gap:3px}
+#operHead .inspectionIdentity b{max-width:100%;font-size:16px;line-height:1.25;font-weight:600;letter-spacing:-.25px;color:#f1f5f9}
+#lotDetail{font-size:12px;line-height:1.2;font-weight:400;color:#8492a6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+#operHead>.inspectionTools{flex:none;display:flex;align-items:center;gap:16px}
+#operHead #shiftNumbers{padding:0;background:none;border-radius:0;color:#9ba8b9;font-size:12px;font-weight:400;white-space:nowrap}
+#operMenu{display:grid;place-items:center;flex:none;width:44px;height:44px;min-height:44px;padding:0;background:transparent;color:#c5cfdd;border:1px solid #303b4b;border-radius:12px}
+#operMenu:hover,#operMenu[aria-expanded="true"]{background:#202a38;border-color:#52647b;color:#fff}
+#operMenu:focus-visible{outline:2px solid #7ab8ff;outline-offset:3px}
+@media(max-width:480px){
+ #operHead{gap:10px}
+ #operHead>.inspectionTools{gap:10px}
+ #operHead .inspectionIdentity b{font-size:14px}
+ #operHead #shiftNumbers{max-width:94px;white-space:normal;text-align:right;line-height:1.5;font-size:11px}
+ #lotDetail{font-size:11px}
+}
+
+/* A direct settings entry and a quiet camera surface. */
+#operMenu{display:flex;align-items:center;justify-content:center;gap:7px;width:auto;padding:0 12px;font-size:12px;font-weight:500}
+#operMenu svg{flex:none}
+#operHead #shiftNumbers{display:none}
+#operVideo #cameraContextTag{display:none}
+#operVideo .viewer .empty p{font-size:13px;font-weight:400;color:#8492a6}
+/* Keep live status announcements without a permanent instruction strip. */
+#operStatus{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;padding:0;border:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}

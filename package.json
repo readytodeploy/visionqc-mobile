@@ -1,0 +1,12 @@
+{
+  "name": "visionqc-mobile",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.cjs",
+    "dev": "node scripts/dev-server.cjs",
+    "build": "node scripts/build-web.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}

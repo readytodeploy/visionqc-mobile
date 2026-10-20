@@ -1,8 +1,10 @@
 'use strict';
+const {authorize,reserve}=require('./lib/access-policy');
 /** Roboflow inference proxy. Keep ROBOFLOW_API_KEY in Vercel env, never in browser. */
 const MODELS=['inspecao-de-molduras-mdf-pretas-3-rfdetr-small-t1','inspecao-de-molduras-mdf-pretas/3'];
 module.exports=async function handler(req,res){
  res.setHeader('Cache-Control','no-store');
+ if(!authorize(req,res))return;
  if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'Método no permitido'});}
  const key=process.env.ROBOFLOW_API_KEY;
  if(!key)return res.status(503).json({error:'Roboflow no está configurado. Define ROBOFLOW_API_KEY en Vercel.'});
@@ -11,6 +13,7 @@ module.exports=async function handler(req,res){
  if(typeof image!=='string'||image.length>1_800_000||!/^data:image\/jpeg;base64,[a-zA-Z0-9+/=]+$/.test(image))return res.status(400).json({error:'Envía un JPEG válido de menos de 1,3 MB'});
  const threshold=Number(confidence);
  if(!Number.isFinite(threshold)||threshold<5||threshold>95)return res.status(400).json({error:'Confianza fuera de rango (5-95)'});
+ if(!await reserve(res))return;
  const body=image.slice('data:image/jpeg;base64,'.length);
  const errors=[];
  for(const model of MODELS){

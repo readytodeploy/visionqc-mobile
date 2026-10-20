@@ -5,7 +5,7 @@ const DB='visionqc-v3',STORE='records',HISTORY='history';let db=null;const ROI={
 /* [MEJORA-34] ROI cuadrado idéntico en visor, calibración y pantalla completa. */
 function geometry(){const v=$('video'),view=$('viewer').getBoundingClientRect(),vw=v.videoWidth||1280,vh=v.videoHeight||720,cw=view.width,ch=view.height,scale=Math.max(cw/vw,ch/vh),ox=(cw-vw*scale)/2,oy=(ch-vh*scale)/2,side=Math.min(cw,ch)*.72;const r={x:(cw-side)/2,y:(ch-side)/2,w:side,h:side},size=side/scale;return {r,cw,ch,source:{x:Math.max(0,(r.x-ox)/scale),y:Math.max(0,(r.y-oy)/scale),w:Math.min(vw,size),h:Math.min(vh,size)}}}
 
-function drawGuide(){const canvas=$('overlay'),g=geometry(),ratio=window.devicePixelRatio||1;canvas.width=Math.round(g.cw*ratio);canvas.height=Math.round(g.ch*ratio);const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);const r=g.r;ctx.strokeStyle='rgba(248,253,255,.86)';ctx.lineWidth=3;const k=Math.min(30,r.w*.14,r.h*.14);for(const [x,y,sx,sy] of [[r.x,r.y,1,1],[r.x+r.w,r.y,-1,1],[r.x,r.y+r.h,1,-1],[r.x+r.w,r.y+r.h,-1,-1]]){ctx.beginPath();ctx.moveTo(x+k*sx,y);ctx.lineTo(x,y);ctx.lineTo(x,y+k*sy);ctx.stroke()}}
+function drawGuide(){const canvas=$('overlay'),g=geometry(),ratio=window.devicePixelRatio||1;canvas.width=Math.round(g.cw*ratio);canvas.height=Math.round(g.ch*ratio);const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);const r=g.r;ctx.strokeStyle='rgba(248,253,255,.86)';ctx.lineWidth=3;const k=Math.min(30,r.w*.14,r.h*.14);for(const [x,y,sx,sy] of [[r.x,r.y,1,1],[r.x+r.w,r.y,-1,1],[r.x,r.y+r.h,1,-1],[r.x+r.w,r.y+r.h,-1,-1]]){ctx.beginPath();ctx.moveTo(x+k*sx,y);ctx.lineTo(x,y);ctx.lineTo(x,y+k*sy);ctx.stroke()}if(st.jevResult)placeJevResult()}
 function capture(){const v=$('video');if(!st.stream||v.readyState<2)throw Error('La cámara todavía no tiene una imagen disponible.');const {source}=geometry(),c=$('frame');c.width=448;c.height=448;c.getContext('2d',{willReadFrequently:true}).drawImage(v,source.x,source.y,source.w,source.h,0,0,448,448);return c}
 /* [MEJORA-4] Calidad de imagen 128×128: brillo, varianza de Laplaciano y movimiento entre fotogramas. */
 function quality(c){const o=document.createElement('canvas');o.width=o.height=128;const ctx=o.getContext('2d',{willReadFrequently:true});ctx.drawImage(c,0,0,128,128);const d=ctx.getImageData(0,0,128,128).data,g=new Float32Array(16384);let m=0,q=0,motion=0;for(let i=0;i<g.length;i++){const p=i*4,z=.299*d[p]+.587*d[p+1]+.114*d[p+2];g[i]=z;m+=z;q+=z*z;if(st.lastGray)motion+=Math.abs(st.lastGray[i]-z)}m/=g.length;const contrast=Math.sqrt(Math.max(0,q/g.length-m*m));motion=st.lastGray?motion/g.length:0;let lap=0,square=0,n=0;for(let y=1;y<127;y++)for(let x=1;x<127;x++){const i=y*128+x,z=4*g[i]-g[i-1]-g[i+1]-g[i-128]-g[i+128];lap+=z;square+=z*z;n++}const sharp=Math.max(0,square/n-(lap/n)**2);st.lastGray=g;const okLight=m>=35&&m<=230&&contrast>=9,okSharp=sharp>=26,okMotion=motion<16;return {ok:okLight&&okSharp&&okMotion,light:okLight,sharp:okSharp,motion:okMotion,values:{m,contrast,sharp,motion},reason:!okLight?'Mejora la iluminación o reduce los reflejos.':!okSharp?'La pieza aparece desenfocada. Acércala o estabiliza el teléfono.':!okMotion?'La pieza se está moviendo. Espera a que se estabilice.':''}}
@@ -124,7 +124,7 @@ function predictionFor(emb){return referenceEnabled()?window.VQCReference.predic
 /* La producción solo inicia tras confirmar explícitamente el conjunto de entrenamiento. */
 const APPROVAL_KEY='vqc_training_approved_v1';
 function calibrationFingerprint(){
- return [referenceEnabled()?'reference':patchEnabled()?'patch':'knn',needs().ok,needs().ko,
+ return [activeProfile(),referenceEnabled()?'reference':patchEnabled()?'patch':'knn',needs().ok,needs().ko,
  st.records.filter(r=>!r.synthetic).map(r=>r.id+':'+r.label).join('|')].join('#');
 }
 function approvalValid(){return localStorage.getItem(APPROVAL_KEY)===calibrationFingerprint()}
@@ -139,7 +139,7 @@ function ready(){if(!profileReady())return false;if(remoteEnabled())return !!st.
 function refresh(){const n=needs(),o=count('ok'),k=count('ko'),b=count('bg');$('okN').textContent=`${o} / ${n.ok}`;$('koN').textContent=`${k} / ${n.ko}`;$('okBar').style.width=Math.min(100,o/n.ok*100)+'%';$('koBar').style.width=Math.min(100,k/n.ko*100)+'%';$('trainingBadge').textContent=`${o+k} piezas · ${b?'Fondo ✓':'Fondo pendiente'}`;const stage=!st.stream?1:!ready()?2:3; if(patchEnabled()){buildPatchBank();$('patchStatus').textContent='PatchCore Lite · '+patchState.referenceCount+' muestras OK · '+patchState.bank.length+' parches · Umbral '+patchState.threshold.toFixed(3);}$('stepLabel').textContent=`PASO ${stage} / 3`;$('stepText').textContent=stage===1?'Ativar câmera':stage===2?'Calibrar IA':'Inspeccionar piezas';$('stepProgress').style.width=(stage===1?0:stage===2?33+57*Math.min(o/n.ok,k/n.ko):100)+'%';$('mainBtn').textContent=!st.stream?'Ativar câmera':!st.model?'Cargando modelo…':!ready()?'Calibrar piezas':'Capturar pieza';$('mainBtn').disabled=!!st.stream&&!st.model;$('autoBtn').disabled=!ready();$('autoBtn').textContent=st.auto?'■ Detener':'▶ Auto';$('addOK').disabled=$('addKO').disabled=$('backgroundBtn').disabled=!st.model||!st.stream||st.busy;$('coach').textContent=patchEnabled()?(!b?'Captura primero el fondo sin piezas.':o<3?'Registra al menos tres piezas OK desde ángulos y distancias variados.':'Banco PatchCore Lite listo; añade más muestras OK para mejorar la cobertura del producto.'):(!b?'Captura el fondo sin piezas; después añade diferentes ejemplos OK y KO.':o<n.ok||k<n.ko?'Captura el mismo producto de frente, lados, distintas distancias y con defectos localizados. Mantén fondo e iluminación controlados.':'Calibración completada. Comprueba la matriz y utiliza piezas nunca vistas para validar.');validation();historyUI();updateCalibrationCamera()}
 async function modelLoad(){if(st.model||st.loading)return;st.loading=true;$('cameraState').textContent='Cargando IA · 15%';try{if(!window.tf||!window.mobilenet)throw Error('Sin acceso a las bibliotecas CDN. Comprueba la conexión y reintenta.');await tf.ready();$('cameraState').textContent='Cargando modelo · 45%';st.model=await mobilenet.load({version:2,alpha:1});$('cameraState').textContent='Optimizando · 85%';const blank=document.createElement('canvas');blank.width=blank.height=224;const t=st.model.infer(blank,true);await t.data();t.dispose();$('cameraState').textContent='● Cámara e IA listas';refresh()}catch(e){toast(e.message+' Pulsa Activar cámara para reintentar.')}finally{st.loading=false;refresh()}}
 /* [MEJORA-11] Permisos HTTPS, cámara iOS y controles condicionales de capacidades. */
-async function startCamera(){if(!isSecureContext){toast('Cámara bloqueada: publica la aplicación con HTTPS y vuelve a abrirla.');return}if(!navigator.mediaDevices?.getUserMedia){toast('Safari no permite cámara en este contexto. Revisa los permisos en Ajustes > Safari.');return}try{st.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:st.facing||'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:15,max:30}}});$('video').srcObject=st.stream;await $('video').play();$('empty').hidden=true;$('empty').style.display='none';st.session++;requestAnimationFrame(drawGuide);cameraControls();refresh();toast('Cámara activa. Puedes encuadrar la pieza mientras carga la IA.');modelLoad().catch(e=>toast('No se pudo cargar la IA: '+e.message)) }catch(e){toast(e.name==='NotAllowedError'?'Permiso de cámara denegado. Actívalo en Ajustes de Safari y pulsa Activar cámara.':'No se pudo iniciar la cámara: '+e.message);stopCamera()}}
+async function startCamera(){if(!isSecureContext){toast('Cámara bloqueada: publica la aplicación con HTTPS y vuelve a abrirla.');return}if(!navigator.mediaDevices?.getUserMedia){toast('Safari no permite cámara en este contexto. Revisa los permisos en Ajustes > Safari.');return}try{st.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:st.facing||'environment'},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:15,max:30}}});$('video').srcObject=st.stream;await $('video').play();$('empty').hidden=true;$('empty').style.display='none';st.session++;requestAnimationFrame(drawGuide);cameraControls();refresh();toast('Cámara activa. Puedes encuadrar la pieza mientras carga la IA.');(!remoteEnabled()?modelLoad():Promise.resolve()).catch(e=>toast('No se pudo carregar a IA: '+e.message)) }catch(e){toast(e.name==='NotAllowedError'?'Permiso de cámara denegado. Actívalo en Ajustes de Safari y pulsa Activar cámara.':'No se pudo iniciar la cámara: '+e.message);stopCamera()}}
 function stopCamera(){stopAuto();st.stream?.getTracks().forEach(t=>t.stop());st.stream=null;$('video').srcObject=null;$('empty').hidden=false;$('empty').style.display='';$('cameraState').textContent='● Cámara inactiva';st.lastGray=null;refresh()}
 async function cameraControls(){const track=st.stream?.getVideoTracks()[0],caps=track?.getCapabilities?.()||{};$('flipBtn').disabled=!track;$('torchBtn').disabled=!('torch'in caps);$('torchBtn').textContent='Linterna';$('focusBtn').disabled=!(caps.focusMode?.includes?.('manual')||caps.exposureMode?.includes?.('manual'));$('zoomBox').hidden=!(caps.zoom&&Number.isFinite(caps.zoom.min));if(!$('zoomBox').hidden){$('zoom').min=caps.zoom.min;$('zoom').max=caps.zoom.max;$('zoom').step=caps.zoom.step||.1;$('zoom').value=track.getSettings?.().zoom||caps.zoom.min}}
 async function constrain(obj){const t=st.stream?.getVideoTracks()[0];if(!t)return;try{await t.applyConstraints({advanced:[obj]})}catch(e){toast('La cámara no admite este ajuste en Safari.') }}
@@ -167,6 +167,7 @@ async function burst(mode='piece'){
 }
 async function add(cls){if(st.busy||!st.model)return;st.busy=true;refresh();try{const result=await burst(cls==='bg'?'bg':'piece'),similar=diversity(cls,result.emb);await storeRecord({id:id(),label:cls,emb:result.emb,thumb:result.thumb,at:Date.now(),synthetic:false});if(cls==='bg')st.bgTiny=tiny(result.canvas);if($('augmentation').checked&&cls!=='bg'){for(const emb of augmented(result.canvas))await storeRecord({id:id(),label:cls,emb,thumb:'',at:Date.now(),synthetic:true})}toast(similar||(cls==='bg'?'Fondo guardado. Los fondos lisos se aceptan sin exigir nitidez.':'Muestra registrada correctamente.'));flash(cls)}catch(e){toast('Captura descartada: '+e.message)}finally{st.busy=false;refresh()}}
 async function inspect(auto=false,pre=null){if(st.busy||!ready())return;st.busy=true;try{
+ if(jevEnabled()){await inspectJev();return;}
  if(remoteEnabled()){
   const video=$('video');if(video.readyState<2)throw new Error('Espera a que la cámara muestre imagen.');
   const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0,c.width,c.height);
@@ -291,36 +292,20 @@ on('mainBtn','click',async()=>{if(!st.stream){await startCamera();return}if(!st.
 on('autoBtn','click',startAuto);on('backgroundBtn','click',()=>add('bg'));on('addOK','click',()=>add('ok'));on('addKO','click',()=>add('ko'));on('correctOK','click',()=>correct('ok'));on('correctKO','click',()=>correct('ko'));
 on('targetOK','change',()=>{localStorage.setItem('vqc_ok',limit($('targetOK').value));refresh()});on('targetKO','change',()=>{localStorage.setItem('vqc_ko',limit($('targetKO').value));refresh()});
 on('autoThreshold','change',()=>{const manual=!$('autoThreshold').checked;$('minSimilarity').disabled=$('minMargin').disabled=!manual;refresh()});on('historyFilter','change',historyUI);on('csvBtn','click',csv);on('exportBtn','click',exportData);on('importBtn','click',()=>$('fileImport').click());on('fileImport','change',e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value=''});
-on('clearBtn','click',async()=>{if(!confirm('¿Eliminar toda la calibración guardada?'))return;stopAuto();await transaction(STORE,'readwrite',o=>o.clear());st.records=[];st.bgTiny=null;st.validationKey='';st.pending=null;st.pendingAuto=null;refresh();newResult(null);toast('Calibración eliminada. Los contadores del turno se conservan en Supervisor → Turno. Puedes cerrarlo para reiniciarlos.')});
+on('clearBtn','click',async()=>{if(!confirm('¿Eliminar toda la calibración guardada?'))return;stopAuto();await transaction(STORE,'readwrite',o=>o.clear());st.records=[];st.bgTiny=null;st.validationKey='';st.pending=null;st.pendingAuto=null;refresh();newResult(null);toast('Calibración eliminada. Los contadores del turno se conservan em Configurações → Turno. Puedes cerrarlo para reiniciarlos.')});
 on('soundBtn','click',()=>{st.silent=!st.silent;$('soundBtn').textContent=st.silent?'♫':'♪';toast(st.silent?'Sonidos desactivados.':'Sonidos activados. El audio requiere interacción con la pantalla.')});on('themeBtn','click',()=>{const light=document.documentElement.dataset.theme!=='light';document.documentElement.dataset.theme=light?'light':'dark';$('themeColor').content=light?'#f6f7fa':'#10141b'});
 on('flipBtn','click',async()=>{st.facing=st.facing==='user'?'environment':'user';stopCamera();await startCamera()});on('torchBtn','click',async()=>{st.torch=!st.torch;await constrain({torch:st.torch})});on('focusBtn','click',()=>constrain({focusMode:'manual',exposureMode:'manual'}));on('zoom','input',e=>constrain({zoom:Number(e.target.value)}));
 on('fullscreenBtn','click',()=>{const on=$('viewer').classList.toggle('full');$('fullscreenBtn').textContent=on?'Salir de pantalla completa':'Expandir visor';drawGuide()});on('fullExit','click',()=>{$('viewer').classList.remove('full');drawGuide()});on('scanSpeed','change',()=>{if(st.auto){stopAuto();startAuto()}});
-new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAuto()});window.addEventListener('pagehide',stopCamera);initOperatorUI();
-(async()=>{
- await restore();
- if(st.records.length===0 && localStorage.getItem('vqc_demo_autoload_disabled')!=='1'){
-   try{
-     const status=u('demoImportStatus');
-     if(status)status.textContent='Preparando dataset de demostración…';
-     let response=await fetch('/datasets/exemplos.json',{cache:'force-cache'});
-     if(!response.ok)response=await fetch('/public/datasets/exemplos.json',{cache:'force-cache'});
-     if(!response.ok)throw Error('Dataset no disponible (HTTP '+response.status+')');
-     const blob=await response.blob();
-     await importDemoDataset(new File([blob],'exemplos.json',{type:'application/json'}));
-   }catch(err){const status=u('demoImportStatus');if(status)status.textContent='Ejemplo disponible para importar manualmente: '+err.message;}
- }
- refresh();
-})();
-
 /* Interfaz Operario/Supervisor separada de los cálculos de visión. */
 let uiMode='manual',uiPinIntent='unlock',uiPane='cal';
 function u(id){return document.getElementById(id)}
 function hideOperatorVerdict(){
+ st.jevResult=null;
  clearDefectMarkers();
  const snap=u('inspectionSnapshot');if(snap)snap.remove();
  const p=u('verdictPanel');p.classList.remove('visible','ko','uncertain');p.hidden=true;
  if(u('inspectAgain'))u('inspectAgain').hidden=true;
- const primary=u('operPrimary');if(primary&&!st.busy&&!st.auto&&st.stream)primary.textContent='Inspecionar peça';
+ const primary=u('operPrimary');if(primary&&!st.busy&&!st.auto&&st.stream)primary.textContent='Capturar';
 }
 function resetManualInspection(){
  if(st.busy)return;
@@ -330,6 +315,36 @@ function resetManualInspection(){
 }
 /* Map detection cells from normalized product coordinates to the actual viewer ROI.
    Indicators show suspicious image regions, not verified defect boundaries. */
+async function checkJevStatus(){
+ const status=u('jevConnection');if(!status)return;
+ status.textContent='Verificando conexão com o servidor…';
+ try{const response=await fetch('/api/jev',{headers:window.VQCAccess?.headers()||{}});if(!response.ok){status.textContent=response.status===401?'Informe a senha de inspeção para liberar o acesso.':response.status===503?'Inspeção remota bloqueada. O administrador deve verificar a configuração de acesso.':'Não foi possível verificar o acesso ao Jev.';return;}const data=await response.json();status.textContent=data.configured?'Credencial configurada; acesso real ainda requer teste de captura.':'Configure AI_GATEWAY_API_KEY no servidor Vercel. Não cole a chave no navegador.';}
+ catch{status.textContent='Inicie o servidor com API (npm run dev) para usar o Jev.';}
+}
+function placeJevResult(){
+ if(!st.jevResult)return;
+ const g=geometry(),snap=u('inspectionSnapshot');
+ if(snap){snap.style.inset='auto';snap.style.left=g.r.x+'px';snap.style.top=g.r.y+'px';snap.style.width=g.r.w+'px';snap.style.height=g.r.h+'px';snap.style.objectFit='fill';}
+ let layer=u('remoteBoxes');if(!layer){layer=document.createElement('div');layer.id='remoteBoxes';layer.className='remoteBoxes';u('viewer').append(layer)}
+ layer.replaceChildren();const data=st.jevResult.data,b=data.box;
+ if(data.verdict==='defect'&&b){const box=document.createElement('div');box.className='remoteBox';box.style.left=(g.r.x+b.left*g.r.w)+'px';box.style.top=(g.r.y+b.top*g.r.h)+'px';box.style.width=((b.right-b.left)*g.r.w)+'px';box.style.height=((b.bottom-b.top)*g.r.h)+'px';box.textContent=data.defectType+' · região sugerida';layer.append(box)}
+}
+async function inspectJev(){
+ const section=capture(),token=st.inferenceToken||0,session=st.session;
+ const data=await window.VQCJev.infer(section,u('jevObject').value,u('jevCriteria').value);
+ if(!jevEnabled()||token!==(st.inferenceToken||0)||session!==st.session||!st.stream)return;
+ clearDefectMarkers();u('inspectionSnapshot')?.remove();
+ const snapshot=new Image();snapshot.id='inspectionSnapshot';snapshot.className='inspectionSnapshot';snapshot.alt='Recorte analisado pelo Jev';snapshot.src=section.toDataURL('image/jpeg',.9);u('viewer').append(snapshot);
+ st.jevResult={data};placeJevResult();
+ const label=data.verdict==='defect'?'ko':'uncertain';
+ newResult(label,data.confidence);
+ u('vText').textContent=label==='ko'?'POSSÍVEL DEFEITO':'REVISAR PEÇA';
+ u('vScore').textContent=(data.assessment==='clear'?'Sem defeito aparente':label==='ko'?data.defectType:'Resultado inconclusivo')+' · Jev experimental';
+ let summary=u('remoteSummary');if(!summary){summary=document.createElement('div');summary.id='remoteSummary';u('verdictPanel').append(summary)}
+ summary.replaceChildren();const message=document.createElement('p');message.textContent='Revise a peça antes de decidir. '+(data.box?'Localização sugerida pelo modelo.':'Sem localização confiável.');summary.append(message);
+ u('inspectAgain').hidden=false;
+ bump(label);await storeHistory({id:id(),at:Date.now(),label,score:data.confidence,batch:u('batch').value,operator:u('operator').value,thumb:section.toDataURL('image/jpeg',.55),error:label==='uncertain',provider:'jev',model:data.model,assessment:data.assessment,experimental:true});
+}
 function showRemoteBoxes(predictions,image,snapshot){
  const previous=u('inspectionSnapshot');if(previous)previous.remove();
  const viewer=u('viewer');
@@ -415,28 +430,44 @@ function presentOperatorVerdict(label,score){
 }
 const PROFILE_KEY='vqc_inspection_profile';
 const PRODUCT_PROFILES={
+ jev:{name:'Jev · inspeção experimental',status:'experimental',details:'Decisão visual remota, sem treinamento próprio e sem validação industrial.'},
+ custom:{name:'Modelo próprio',status:'requires_calibration',model:'Calibração local',details:'Objeto definido pelo usuário. Exige calibração e avaliação independente.'},
  mdf:{name:'Molduras MDF',status:'ready',model:'RF-DETR V3',details:'Modelo configurado. Verifique a precisão com amostras reais.'},
  textile:{name:'Tecidos e revestimentos',status:'needs_training',details:'Necessário dataset rotulado e treinamento.'},
  mattress:{name:'Colchões e capas',status:'needs_training',details:'Necessário dataset de colchões e treinamento.'},
  sofa:{name:'Sofás e estofados',status:'needs_training',details:'Necessário dataset de estofados e treinamento.'}
 };
 function activeProfile(){return localStorage.getItem(PROFILE_KEY)||'mdf'}
-function profileReady(){return PRODUCT_PROFILES[activeProfile()]?.status==='ready'}
+function profileReady(){return ['custom','jev'].includes(activeProfile())||PRODUCT_PROFILES[activeProfile()]?.status==='ready'}
 function renderProductProfile(){
  const select=u('productProfile'),status=u('productProfileStatus');if(!select||!status)return;
  select.value=activeProfile();const p=PRODUCT_PROFILES[activeProfile()]||PRODUCT_PROFILES.mdf;
  status.textContent=p.status==='ready'?'Modelo disponível · '+p.model+'. '+p.details:'Aguardando treinamento · '+p.details;
  status.dataset.status=p.status;
- const provider=u('detectionProvider');if(provider){provider.disabled=!profileReady();if(profileReady()){provider.value='roboflow';localStorage.setItem('vqc_detection_provider','roboflow')}}
+ const provider=u('detectionProvider');if(provider){provider.disabled=!profileReady();provider.value=localStorage.getItem('vqc_detection_provider')||'roboflow'}
 }
-function remoteEnabled(){return profileReady()&&(localStorage.getItem('vqc_detection_provider')||'roboflow')==='roboflow'}
+function jevEnabled(){return activeProfile()==='jev'}
+function remoteEnabled(){return jevEnabled()||activeProfile()==='mdf'&&(localStorage.getItem('vqc_detection_provider')||'roboflow')==='roboflow'}
+function syncEvaluationModel(){
+ const select=u('evaluationModel');if(!select)return;
+ const profile=activeProfile(),local=profileReady()&&!remoteEnabled();
+ select.value=profile==='custom'?'custom':profile==='mdf'?'mdf_remote':profile;
+ u('localModelSettings').hidden=!local;
+ u('remoteModelSettings').hidden=!remoteEnabled()||jevEnabled();
+ if(u('jevSettings'))u('jevSettings').hidden=!jevEnabled();
+ u('evaluationModelStatus').textContent=jevEnabled()?'Jev 1.14 · análise experimental do recorte; resultados exigem revisão humana.':!profileReady()?'Indisponível: modelo ainda não treinado para este produto.':local?'Modelo próprio experimental · usa os parâmetros e as amostras definidos na aba Treino. Avalie com amostras independentes do objeto escolhido.':'RF-DETR V3 · MDF · serviço remoto configurado, sem validação industrial comprovada.';
+}
 function updateOperator(){
- u('lotName').textContent=(PRODUCT_PROFILES[activeProfile()]?.name||'Produto')+' · '+(u('batch').value||'Sem lote');
- u('shiftNumbers').textContent=count('ok')===0&&count('ko')===0&&count('bg')===0?'Sem calibração':st.count+' · '+st.koCount+' defeitos';
- u('operPrimary').textContent=!profileReady()?'Modelo indisponível':!st.stream?'Ativar câmera':!ready()?'Confirmar calibração':st.auto?'Parar inspeção':u('verdictPanel')&&!u('verdictPanel').hidden?'Nova inspeção':uiMode==='automatic'?'Iniciar automático':'Inspecionar peça';
- u('operMissing').hidden=!profileReady()||remoteEnabled()||!st.stream||ready();if(st.stream&&!ready()&&!remoteEnabled())u('operStatus').textContent=calibrationComplete()?'Confirme o treinamento no Supervisor':'Calibração pendente';
+ if(remoteEnabled()||!profileReady())uiMode='manual';
+ u('lotName').textContent=PRODUCT_PROFILES[activeProfile()]?.name||'Produto';
+ u('lotDetail').textContent=u('batch').value?'Lote '+u('batch').value:'Sem lote definido';
+ u('shiftNumbers').textContent=count('ok')===0&&count('ko')===0&&count('bg')===0?'Sem calibração':st.count+' inspeções · '+st.koCount+' defeitos';
+ u('operPrimary').textContent='Capturar';
+ u('operMissing').hidden=!profileReady()||remoteEnabled()||!st.stream||ready();if(st.stream&&!ready()&&!remoteEnabled())u('operStatus').textContent=calibrationComplete()?'Confirme o treinamento nas configurações':'Calibração pendente';
  u('modoManual').setAttribute('aria-pressed',String(uiMode==='manual'));
  u('modoAuto').setAttribute('aria-pressed',String(uiMode==='automatic'));
+ u('modoAuto').disabled=remoteEnabled()||!profileReady();
+ syncEvaluationModel();
  if(!u('superScreen').hidden)updateCalibrationWizard();
 }
 const originalRefresh=refresh;
@@ -465,7 +496,10 @@ function showSupervisor(pane){stopAuto();u('operScreen').hidden=true;u('superScr
 function leaveSupervisor(){u('superScreen').hidden=true;u('operScreen').hidden=false;repositionViewer(u('operVideo'));updateOperator()}
 function setSupervisorPane(pane){uiPane=pane;for(const [key,id] of [['cal','calPane'],['turn','turnPane'],['settings','settingsPane']])u(id).hidden=key!==pane;document.querySelectorAll('[data-pane]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===pane)));if(pane==='cal')repositionViewer(u('calViewer'));updateCalibrationWizard()}
 function updateCalibrationWizard(){
- if(uiPane!=='cal')return;const bg=count('bg'),ok=count('ok'),ko=count('ko'),n=needs(),minOK=referenceEnabled()?1:n.ok,stage=!bg?0:ok<minOK?1:ko<n.ko&&!patchEnabled()&&!referenceEnabled()?2:3;
+ if(uiPane!=='cal')return;
+ const remote=remoteEnabled();u('calSteps').hidden=remote;u('calCapture').disabled=remote;u('calUndo').hidden=remote;
+ if(remote){u('calCount').textContent='Sem treinamento local';u('calHelp').textContent=jevEnabled()?'Defina o objeto e os defeitos em Configurações. Use Capturar no visor para enviar a região ao Jev.':'O provedor remoto usa seu próprio modelo.';u('calCapture').textContent='Não requer calibração';u('calDone').hidden=true;return;}
+ const bg=count('bg'),ok=count('ok'),ko=count('ko'),n=needs(),minOK=referenceEnabled()?1:n.ok,stage=!bg?0:ok<minOK?1:ko<n.ko&&!patchEnabled()&&!referenceEnabled()?2:3;
  [...u('calSteps').children].forEach((x,i)=>x.classList.toggle('active',i===Math.min(stage,2)));
  u('calCount').textContent=stage===0?'1 · Registrar fondo':stage===1?'2 · Buenas: '+ok+' de '+minOK:stage===2?'3 · Defectuosas: '+ko+' de '+n.ko:approvalValid()?'✓ Entrenamiento confirmado':'✓ Muestras completas · Confirma para producir';
  if(u('cameraContextDetail')&&uiPane==='cal')u('cameraContextDetail').textContent=stage===0?'ENTRENAR · Fondo vacío':stage===1?'ENTRENAR · Guardar pieza buena':stage===2?'ENTRENAR · Guardar pieza defectuosa':'Calibración completada';
@@ -540,12 +574,12 @@ function initOperatorUI(){
  const help=document.createElement('p');help.className='muted';help.textContent='Define las imágenes necesarias por clase. Usa distintos ángulos, acercamientos y defectos.';trainSettings.append(help);
  u('settingsContent').prepend(trainSettings);
  const productCard=document.createElement('div');productCard.className='card';productCard.id='productProfileCard';
- productCard.innerHTML='<h2>Produto inspecionado</h2><div class="field"><label for="productProfile">Perfil de inspeção</label><select id="productProfile"><option value="mdf">Molduras MDF</option><option value="textile">Tecidos e revestimentos</option><option value="mattress">Colchões e capas</option><option value="sofa">Sofás e estofados</option></select></div><p id="productProfileStatus" role="status"></p><p class="muted">Os modelos são independentes. Perfis sem treinamento não realizam classificação.</p>';
+ productCard.innerHTML='<h2>Produto inspecionado</h2><div class="field"><label for="productProfile">Perfil de inspeção</label><select id="productProfile"><option value="mdf">Molduras MDF</option><option value="custom">Modelo próprio</option><option value="jev">Jev experimental</option><option value="textile">Tecidos e revestimentos</option><option value="mattress">Colchões e capas</option><option value="sofa">Sofás e estofados</option></select></div><p id="productProfileStatus" role="status"></p><p class="muted">Os modelos são independentes. Perfis sem treinamento não realizam classificação.</p>';
  u('settingsContent').prepend(productCard);
  u('productProfile').onchange=()=>{stopAuto();hideOperatorVerdict();localStorage.setItem(PROFILE_KEY,u('productProfile').value);renderProductProfile();updateOperator()};
  renderProductProfile();
  const providerCard=document.createElement('div');providerCard.className='card';
- providerCard.innerHTML='<h2>Modelo de inspeção</h2><div class="field"><label for="detectionProvider">Provedor</label><select id="detectionProvider"><option value="local">Local · MobileNet / KNN / PatchCore Lite</option><option value="roboflow">Roboflow · RF-DETR V3 (nuvem)</option></select></div><div class="field"><label for="remoteConfidence">Confiança mínima (%)</label><input id="remoteConfidence" type="number" min="5" max="95" step="5" value="50"></div><p class="muted">Roboflow necesita conexión, backend configurado y envía una imagen del producto al servicio. No usa la calibración local. En este modo el resultado sin detecciones significa «sin defecto detectado», no garantía de pieza correcta. Solo inspección manual.</p>';
+ providerCard.innerHTML='<h2>Modelo de inspeção</h2><div class="field"><label for="detectionProvider">Provedor</label><select id="detectionProvider"><option value="jev">Jev experimental</option><option value="local">Local · MobileNet / KNN / PatchCore Lite</option><option value="roboflow">Roboflow · RF-DETR V3 (nuvem)</option></select></div><div class="field"><label for="remoteConfidence">Confiança mínima (%)</label><input id="remoteConfidence" type="number" min="5" max="95" step="5" value="50"></div><p class="muted">Roboflow necesita conexión, backend configurado y envía una imagen del producto al servicio. No usa la calibración local. En este modo el resultado sin detecciones significa «sin defecto detectado», no garantía de pieza correcta. Solo inspección manual.</p>';
  u('settingsContent').prepend(providerCard);
  u('detectionProvider').value=localStorage.getItem('vqc_detection_provider')||'roboflow';
  u('remoteConfidence').value=localStorage.getItem('vqc_remote_confidence')||'50';
@@ -582,8 +616,42 @@ function initOperatorUI(){
  const data=document.createElement('div');data.className='card';data.innerHTML='<h2>Datos de calibración</h2>';
  for(const id of ['exportBtn','importBtn','fileImport','clearBtn'])data.append(u(id));
  u('settingsContent').append(data);
+ // One model selection drives both the product allowlist and inference provider.
+ const modelCard=document.createElement('div');modelCard.className='card';modelCard.id='evaluationModelCard';
+ modelCard.innerHTML='<h2>Modelo de avaliação</h2><div class="field"><label for="evaluationModel">Modelo usado na captura</label><select id="evaluationModel"><option value="jev">Jev · decisão visual (experimental)</option><option value="mdf_remote">MDF · RF-DETR V3 (nuvem)</option><option value="custom">Modelo próprio · qualquer objeto (experimental)</option><option value="textile">Tecidos · não treinado</option><option value="mattress">Colchões · não treinado</option><option value="sofa">Estofados · não treinado</option></select></div><p id="evaluationModelStatus" class="muted" role="status"></p><div id="remoteModelSettings"></div><div id="localModelSettings"></div>';
+ const remoteSettings=modelCard.querySelector('#remoteModelSettings');
+ remoteSettings.append(u('remoteConfidence').closest('.field'),providerCard.querySelector('p'));
+ const localSettings=modelCard.querySelector('#localModelSettings');
+ heading.textContent='Amostras para o modelo próprio';
+ detection.append(u('patchcoreHelp'),u('patchStatus'));
+ localSettings.append(trainSettings,referenceBox,details,detection,advanced,data,demoCard);
+ u('calPane').append(localSettings);
+ productCard.hidden=true;providerCard.hidden=true;
+ u('settingsContent').prepend(modelCard);
+ u('evaluationModel').onchange=()=>{
+  const value=u('evaluationModel').value;
+  stopAuto();hideOperatorVerdict();
+  localStorage.setItem(PROFILE_KEY,value==='mdf_remote'?'mdf':value);
+  localStorage.setItem('vqc_detection_provider',value==='custom'?'local':value==='jev'?'jev':'roboflow');
+  st.inferenceToken=(st.inferenceToken||0)+1;
+  if(value==='jev')checkJevStatus();
+  renderProductProfile();updateOperator();
+ };
+ const jevSettings=document.createElement('div');jevSettings.id='jevSettings';jevSettings.hidden=true;
+ const accessCard=document.createElement('div');accessCard.className='card';
+ accessCard.innerHTML='<h2>Acesso à inspeção remota</h2><label for="inspectionPassword">Senha de inspeção</label><input id="inspectionPassword" type="password" autocomplete="off"><button id="inspectionUnlock" type="button">Liberar nesta sessão</button><button id="inspectionLock" type="button">Bloquear acesso</button><p id="inspectionAccessStatus" class="muted" role="status">A senha fica apenas na memória desta página. Recarregar encerra o acesso.</p>';
+ u('settingsContent').prepend(accessCard);
+ u('inspectionUnlock').addEventListener('click',()=>{window.VQCAccess?.unlock(u('inspectionPassword').value);u('inspectionPassword').value='';u('inspectionAccessStatus').textContent='Senha aplicada; a próxima consulta verificará o acesso.';checkJevStatus();});
+ u('inspectionLock').addEventListener('click',()=>{window.VQCAccess?.unlock('');u('inspectionPassword').value='';u('inspectionAccessStatus').textContent='Acesso removido desta página.';});
+ jevSettings.innerHTML='<div class="field"><label for="jevObject">Objeto inspecionado</label><input id="jevObject" type="text" maxlength="80" placeholder="Ex.: capa de almofada"></div><div class="field"><label for="jevCriteria">Defeitos a verificar</label><textarea id="jevCriteria" maxlength="600" rows="3"></textarea></div><p class="muted">Ao capturar, apenas a região dentro da moldura será enviada pelo Vercel AI Gateway à TypeSafe AI. O uso depende dos créditos e limites da conta. Sem defeito aparente não significa peça aprovada.</p><p id="jevConnection" role="status" class="muted"></p>';
+ modelCard.append(jevSettings);
+ u('jevObject').value=localStorage.getItem('vqc_jev_object')||'Peça de tecido';
+ u('jevCriteria').value=localStorage.getItem('vqc_jev_criteria')||'Manchas, rasgos, furos e falhas de costura. Não confundir estampa e textura com defeitos.';
+ for(const [id,key] of [['jevObject','vqc_jev_object'],['jevCriteria','vqc_jev_criteria']])u(id).oninput=()=>localStorage.setItem(key,u(id).value);
+ if(jevEnabled())checkJevStatus();
+ syncEvaluationModel();
  u('training').hidden=true;
- u('operMenu').onclick=()=>u('accessMenu').hidden=!u('accessMenu').hidden;
+ u('operMenu').onclick=()=>showSupervisor('settings');
  u('accessSupervisor').onclick=requestSupervisor;
  u('goSuper').onclick=requestSupervisor;
  u('pinBack').onclick=()=>u('pinOverlay').hidden=true;
@@ -591,8 +659,8 @@ function initOperatorUI(){
  u('exitSuper').onclick=leaveSupervisor;
  document.querySelectorAll('[data-pane]').forEach(b=>b.onclick=()=>setSupervisorPane(b.dataset.pane));
  u('modoManual').onclick=()=>{uiMode='manual';if(st.auto)stopAuto();updateOperator()};
- u('modoAuto').onclick=()=>{if(remoteEnabled()){toast('Roboflow está disponible solo en modo manual.');return}uiMode='automatic';updateOperator()};
- u('operPrimary').onclick=async()=>{if(st.stream&&!u('verdictPanel').hidden){resetManualInspection();return}if(!profileReady()){requestSupervisor();setSupervisorPane('settings');toast('Este produto precisa de treinamento antes da inspeção.');return}if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){if(remoteEnabled()){toast('O modelo Roboflow funciona no modo manual.');return}startAuto();return}u('operStatus').textContent='Analisando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
+ u('modoAuto').onclick=()=>{if(remoteEnabled()){toast('O provedor remoto funciona apenas em modo manual.');return}uiMode='automatic';updateOperator()};
+ u('operPrimary').onclick=async()=>{if(st.stream&&!u('verdictPanel').hidden){resetManualInspection();return}if(!profileReady()){requestSupervisor();setSupervisorPane('settings');toast('Este produto precisa de treinamento antes da inspeção.');return}if(!st.stream){await startCamera();return}if(!ready()){requestSupervisor();return}if(st.auto){stopAuto();hideOperatorVerdict();return}if(uiMode==='automatic'){if(remoteEnabled()){toast('O provedor remoto funciona no modo manual.');return}startAuto();return}u('operStatus').textContent='Analisando…';u('operPrimary').disabled=true;try{await inspect(false)}finally{u('operPrimary').disabled=false;updateOperator()}};
  const again=document.createElement('button');again.type='button';again.id='inspectAgain';again.className='inspectAgain';again.textContent='Nova inspeção';again.hidden=true;again.onclick=resetManualInspection;u('verdictPanel').append(again);
  u('calCapture').onclick=captureCal;u('calUndo').onclick=undoCal;u('calDone').onclick=approveTraining;
  u('fixGood').onclick=()=>{u('fixGood').classList.add('chosen');u('correctOK').click();u('operStatus').textContent='✓ Corrección registrada';hideOperatorVerdict()};
@@ -602,5 +670,28 @@ function initOperatorUI(){
  u('batch').oninput=updateOperator;
  repositionViewer(u('operVideo'));
 }
+
+// Migrate the previous MDF/local option to an independent user-defined model.
+if(localStorage.getItem(PROFILE_KEY)==='mdf'&&localStorage.getItem('vqc_detection_provider')==='local'){
+ localStorage.setItem(PROFILE_KEY,'custom');
+}
+// Start only after profile metadata and UI state have been initialized.
+new ResizeObserver(drawGuide).observe($('viewer'));document.addEventListener('visibilitychange',()=>{if(document.hidden)stopAuto()});window.addEventListener('pagehide',stopCamera);initOperatorUI();
+(async()=>{
+ await restore();
+ if(!remoteEnabled() && st.records.length===0 && localStorage.getItem('vqc_demo_autoload_disabled')!=='1'){
+   try{
+     const status=u('demoImportStatus');
+     if(status)status.textContent='Preparando dataset de demostración…';
+     let response=await fetch('/datasets/exemplos.json',{cache:'force-cache'});
+     if(!response.ok)response=await fetch('/public/datasets/exemplos.json',{cache:'force-cache'});
+     if(!response.ok)throw Error('Dataset no disponible (HTTP '+response.status+')');
+     const blob=await response.blob();
+     await importDemoDataset(new File([blob],'exemplos.json',{type:'application/json'}));
+   }catch(err){const status=u('demoImportStatus');if(status)status.textContent='Ejemplo disponible para importar manualmente: '+err.message;}
+ }
+ refresh();
+})();
+
 
 })();
