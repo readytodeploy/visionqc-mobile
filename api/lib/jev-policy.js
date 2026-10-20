@@ -3,7 +3,7 @@ const DEFECTS={seam:'Falha de costura',stain:'Mancha',tear:'Rasgo ou furo',damag
 const unit=x=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=1;
 function normalize(data){
  const a=data?.answers,d=a?.decision,t=a?.defect_type,b=a?.defect_box;
- if(typeof data?.model!=='string'||data.model!=='typesafe-ai/jev-1.14.0'||d?.type!=='choice'||!['defect','clear','uncertain'].includes(d.choice)||!unit(d.confidence)||t?.type!=='choice'||!Object.hasOwn(DEFECTS,t.choice)||!unit(t.confidence))throw new Error('invalid upstream response');
+ if(typeof data?.model!=='string'||data.model!=='jev-1.14.0'||d?.type!=='choice'||!['defect','clear','uncertain'].includes(d.choice)||!unit(d.confidence)||t?.type!=='choice'||!Object.hasOwn(DEFECTS,t.choice)||!unit(t.confidence))throw new Error('invalid upstream response');
  const certain=d.choice==='defect'&&d.confidence>=.85&&t.confidence>=.7&&!['none','uncertain'].includes(t.choice);
  const edges=b?.box;
  const validBox=b?.type==='box'&&unit(b.confidence)&&b.confidence>=.7&&edges&&['left','top','right','bottom'].every(k=>unit(edges[k]))&&edges.left<edges.right&&edges.top<edges.bottom;

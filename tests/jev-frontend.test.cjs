@@ -10,7 +10,7 @@ test('Jev captures ROI, avoids local training, renders review safely, and permit
   count++;lastBody=JSON.parse(options.body);
   if(count===1)await new Promise(resolve=>{release=resolve;});
   if(count===3)return {ok:false,status:401,json:async()=>({error:'Acesso restrito. Informe a senha em Configurações.'})};
-  return {ok:true,json:async()=>({model:'typesafe-ai/jev-1.14.0',assessment:count===1?'clear':'defect',verdict:count===1?'review':'defect',confidence:.95,defectType:'Falha de costura',box:count===1?null:{left:.1,top:.2,right:.5,bottom:.7},experimental:true,production_ready:false})};
+  return {ok:true,json:async()=>({model:'jev-1.14.0',assessment:count===1?'clear':'defect',verdict:count===1?'review':'defect',confidence:.95,defectType:'Falha de costura',box:count===1?null:{left:.1,top:.2,right:.5,bottom:.7},experimental:true,production_ready:false})};
  };
  w.eval(fs.readFileSync('js/jev-client.js','utf8'));w.eval(fs.readFileSync('js/app.js','utf8'));await new Promise(r=>setImmediate(r));
  el('evaluationModel').value='jev';el('evaluationModel').dispatchEvent(new w.Event('change'));await new Promise(r=>setImmediate(r));

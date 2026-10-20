@@ -4,12 +4,13 @@
 
 No Vercel, projeto visionqc-mobile → Settings → Environment Variables → Production:
 
-- `AI_GATEWAY_API_KEY`: chave de AI Gateway, como Secret.
+- `AI_JEV_API_KEY`: chave direta da TypeSafe AI, como Secret.
 - `VQC_ACCESS_PASSWORD`: senha aleatória de pelo menos 20 caracteres, como Secret.
   Usar uma senha diferente da chave de IA.
 
 Fazer Redeploy. Na aplicação, Configurações → Acesso à inspeção remota → senha →
 Liberar nesta sessão. Selecionar Jev, informar objeto/critérios e capturar.
+A chave do exemplo foi transferida para `.env.local` e o exemplo permanece vazio.
 A senha fica somente na memória da página; Bloquear acesso ou recarregar remove-a.
 Redis não é necessário. Nenhum recurso adicional é provisionado.
 Se `VQC_REMOTE_ENABLED=false` já estiver configurado, remover a variável ou
@@ -34,10 +35,10 @@ Para interromper chamadas, configurar `VQC_REMOTE_ENABLED=false` e fazer
 Redeploy. Localhost mantém o fluxo de desenvolvimento sem senha, exceto com
 `VQC_ENFORCE_ACCESS=true`; o interruptor de emergência também funciona localmente.
 
-O controle financeiro precisa permanecer no painel da conta: verificar saldo,
-elegibilidade do modelo, recargas desativadas e limites/orçamentos disponíveis.
+O controle financeiro precisa permanecer no painel TypeSafe: verificar saldo e
+limites de consumo do contrato direto.
 Limitar capturas não garante custo zero. Não houve alteração da facturação.
-[Preços AI Gateway](https://vercel.com/docs/ai-gateway/pricing).
+[Documentação TypeSafe](https://docs.typesafe.ai/models).
 
 ## Arquivos publicados
 

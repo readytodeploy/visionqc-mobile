@@ -11,7 +11,7 @@ test('public build includes only runtime assets, never secrets, datasets or rese
  const config=require('../vercel.json');assert.equal(config.outputDirectory,'dist');assert.equal(config.buildCommand,'npm run build');
 });
 test('simple deployed access requires only a password and limits requests within each instance',async()=>{
- const names=['VERCEL','VQC_ENFORCE_ACCESS','VQC_REMOTE_ENABLED','VQC_ACCESS_PASSWORD','VQC_REQUESTS_PER_MINUTE','VQC_REQUESTS_PER_DAY','AI_GATEWAY_API_KEY','ROBOFLOW_API_KEY'];
+ const names=['VERCEL','VQC_ENFORCE_ACCESS','VQC_REMOTE_ENABLED','VQC_ACCESS_PASSWORD','VQC_REQUESTS_PER_MINUTE','VQC_REQUESTS_PER_DAY','AI_JEV_API_KEY','ROBOFLOW_API_KEY'];
  const saved=Object.fromEntries(names.map(n=>[n,process.env[n]])),fetchSaved=global.fetch,nowSaved=Date.now;
  const request={method:'POST',headers:{host:'test.example',origin:'https://test.example'}};
  let time=2000000000000;Date.now=()=>time;
@@ -28,7 +28,7 @@ test('simple deployed access requires only a password and limits requests within
   const reservations=await Promise.all(Array.from({length:7},()=>reserve(res())));
   assert.equal(reservations.filter(Boolean).length,6);
   r=res();assert.equal(await reserve(r),false);assert.equal(r.code,429);assert.ok(Number(r.headers['Retry-After'])>0);
-  process.env.AI_GATEWAY_API_KEY='test-gateway';process.env.ROBOFLOW_API_KEY='test-roboflow';
+  process.env.AI_JEV_API_KEY='test-gateway';process.env.ROBOFLOW_API_KEY='test-roboflow';
   const jpeg=Buffer.from([255,216,255,192,0,8,8,1,192,1,192,1,255,217]);
   for(const [handler,profile] of [[jev,'jev'],[roboflow,'mdf']]){r=res();await handler({...request,body:{profile,image:'data:image/jpeg;base64,'+jpeg.toString('base64')}},r);assert.equal(r.code,429);}
   time+=60000;assert.equal(await reserve(res()),true);

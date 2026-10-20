@@ -330,7 +330,7 @@ async function verifyInspectionAccess(){
    status.textContent=response.status===401?'Senha incorreta. Tente novamente.':response.status===503?'Acesso bloqueado no servidor. Verifique VQC_ACCESS_PASSWORD e VQC_REMOTE_ENABLED em Vercel.':'Não foi possível verificar o acesso. Tente novamente.';
   }else{
    status.dataset.state=data.accessVerified?'success':'pending';
-   status.textContent=data.accessVerified?(data.configured?'Acesso liberado. Você já pode testar uma captura com Jev.':'Senha correta. Falta configurar AI_GATEWAY_API_KEY no servidor.'):'Servidor local: a senha não é exigida nem foi validada. Verifique o acesso na versão publicada.';
+   status.textContent=data.accessVerified?(data.configured?'Acesso liberado. Você já pode testar uma captura com Jev.':'Senha correta. Falta configurar AI_JEV_API_KEY no servidor.'):'Servidor local: a senha não é exigida nem foi validada. Verifique o acesso na versão publicada.';
   }
   if(u('jevConnection'))u('jevConnection').textContent=status.textContent;
  }catch{
@@ -340,7 +340,7 @@ async function verifyInspectionAccess(){
 async function checkJevStatus(){
  const status=u('jevConnection');if(!status)return;
  status.textContent='Verificando conexão com o servidor…';
- try{const response=await fetch('/api/jev',{headers:window.VQCAccess?.headers()||{}});if(!response.ok){status.textContent=response.status===401?'Informe a senha de inspeção para liberar o acesso.':response.status===503?'Inspeção remota bloqueada. O administrador deve verificar a configuração de acesso.':'Não foi possível verificar o acesso ao Jev.';return;}const data=await response.json();status.textContent=data.configured?'Credencial configurada; acesso real ainda requer teste de captura.':'Configure AI_GATEWAY_API_KEY no servidor Vercel. Não cole a chave no navegador.';}
+ try{const response=await fetch('/api/jev',{headers:window.VQCAccess?.headers()||{}});if(!response.ok){status.textContent=response.status===401?'Informe a senha de inspeção para liberar o acesso.':response.status===503?'Inspeção remota bloqueada. O administrador deve verificar a configuração de acesso.':'Não foi possível verificar o acesso ao Jev.';return;}const data=await response.json();status.textContent=data.configured?'Credencial configurada; acesso real ainda requer teste de captura.':'Configure AI_JEV_API_KEY no servidor Vercel. Não cole a chave no navegador.';}
  catch{status.textContent='Inicie o servidor com API (npm run dev) para usar o Jev.';}
 }
 function placeJevResult(){
@@ -667,7 +667,7 @@ function initOperatorUI(){
  u('inspectionUnlock').addEventListener('click',verifyInspectionAccess);
  u('inspectionPassword').addEventListener('keydown',e=>{if(e.key==='Enter'&&!u('inspectionUnlock').disabled){e.preventDefault();verifyInspectionAccess();}});
  u('inspectionLock').addEventListener('click',()=>{accessAttempt++;u('inspectionAccessStatus').dataset.state='pending';window.VQCAccess?.unlock('');u('inspectionPassword').value='';u('inspectionAccessStatus').textContent='Acesso removido desta página.';});
- jevSettings.innerHTML='<div class="field"><label for="jevObject">Objeto inspecionado</label><input id="jevObject" type="text" maxlength="80" placeholder="Ex.: capa de almofada"></div><div class="field"><label for="jevCriteria">Defeitos a verificar</label><textarea id="jevCriteria" maxlength="600" rows="3"></textarea></div><p class="muted">Ao capturar, apenas a região dentro da moldura será enviada pelo Vercel AI Gateway à TypeSafe AI. O uso depende dos créditos e limites da conta. Sem defeito aparente não significa peça aprovada.</p><p id="jevConnection" role="status" class="muted"></p>';
+ jevSettings.innerHTML='<div class="field"><label for="jevObject">Objeto inspecionado</label><input id="jevObject" type="text" maxlength="80" placeholder="Ex.: capa de almofada"></div><div class="field"><label for="jevCriteria">Defeitos a verificar</label><textarea id="jevCriteria" maxlength="600" rows="3"></textarea></div><p class="muted">Ao capturar, apenas a região dentro da moldura será enviada diretamente à TypeSafe AI. O uso depende dos créditos e limites da conta. Sem defeito aparente não significa peça aprovada.</p><p id="jevConnection" role="status" class="muted"></p>';
  modelCard.append(jevSettings);
  u('jevObject').value=localStorage.getItem('vqc_jev_object')||'Peça de tecido';
  u('jevCriteria').value=localStorage.getItem('vqc_jev_criteria')||'Manchas, rasgos, furos e falhas de costura. Não confundir estampa e textura com defeitos.';

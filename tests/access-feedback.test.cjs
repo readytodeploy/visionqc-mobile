@@ -25,7 +25,7 @@ test('password action verifies access, reports failures and success, and hides e
  await submit();assert.match(el('inspectionAccessStatus').textContent,/Senha incorreta/);assert.deepEqual(Object.keys(w.VQCAccess.headers()),[]);
  code=503;await submit();assert.match(el('inspectionAccessStatus').textContent,/bloqueado/);
  code=200;await submit();assert.match(el('inspectionAccessStatus').textContent,/Acesso liberado/);assert.equal(el('inspectionAccessStatus').dataset.state,'success');
- configured=false;await submit();assert.match(el('inspectionAccessStatus').textContent,/Falta configurar AI_GATEWAY_API_KEY/);
+ configured=false;await submit();assert.match(el('inspectionAccessStatus').textContent,/Falta configurar AI_JEV_API_KEY/);
  verified=false;await submit();assert.match(el('inspectionAccessStatus').textContent,/nem foi validada/);
  offline=true;await submit();assert.match(el('inspectionAccessStatus').textContent,/Falha/);offline=false;
  verified=true;configured=true;pendingResolve=true;el('inspectionPassword').value='test-password';el('inspectionUnlock').click();await flush();
