@@ -21,7 +21,7 @@ module.exports=async function handler(req,res){
  const key=credential();if(!key)return res.status(503).json({error:'Configure AI_JEV_API_KEY no servidor para usar o Jev diretamente.'});
  if(!await reserve(res))return;
  const reference=randomUUID();
- const payload=buildPayload({model:MODEL,reference,base64,objectName,criteria});
+ const payload=buildPayload({model:MODEL,reference,base64,objectName,criteria,imageSize:size});
  const abort=new AbortController();const timer=setTimeout(()=>abort.abort(),25000);
  try{
   const upstream=await fetch(ENDPOINT,{method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json','TypeSafe-Danger-Zone-Images':'true'},body:JSON.stringify(payload),signal:abort.signal});

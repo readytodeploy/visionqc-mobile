@@ -1,6 +1,6 @@
 # Jev: contrato direto TypeSafe AI
 
-Atualizado em 20/10/2026. O Gateway da Vercel rejeitou Jev 1.14 no nível gratuito
+Atualizado em 21/10/2026. O Gateway da Vercel rejeitou Jev 1.14 no nível gratuito
 com 403 RestrictedModelsError. O usuário contratou diretamente a TypeSafe AI.
 
 ## Configuração e fluxo
@@ -14,7 +14,8 @@ VQC_ACCESS_PASSWORD e os limites básicos por instância continuam em vigor.
 Ver DEPLOYMENT_SECURITY.md.
 
 Configurações → Jev → objeto e defeitos → liberar acesso → Capturar.
-Com a câmera ativa, somente a moldura quadrada de 448×448 é enviada, como JPEG.
+Com a câmera ativa, a imagem inteira da câmera é enviada como JPEG, com proporção preservada e
+lado maior limitado a 1536 pixels, sem recorte central.
 Não carrega o modelo local nem treina pesos nesse modo. O progresso e os erros
 ficam visíveis abaixo do visor; a próxima captura não exige recarregar a página.
 A captura transmite a imagem diretamente à TypeSafe AI, com aviso na interface.
@@ -31,7 +32,7 @@ Nenhum resultado aprova automaticamente uma peça.
 
 ## Verificação
 
-- Oito testes locais passaram, cobrindo inicialização, perfis, segurança das
+- Nove testes locais passaram, cobrindo inicialização, perfis, segurança das
   APIs, autenticação, payload, política de caixas e feedback de captura.
 - Chaves antigas do Gateway e OIDC não habilitam a rota direta.
 - Uma chamada real à API direta, com JPEG sintético uniforme de 448×448,
@@ -63,3 +64,36 @@ Esses limiares são heurísticos; não há melhora de acurácia demonstrada sem 
 comparativo em fotos reais rotuladas e independentes. As seis perguntas aumentam
 o uso de tokens em relação ao prompt anterior. Critérios personalizados salvos
 são preservados; somente os textos padrão antigos são substituídos.
+
+## Captura e resultados v3 (21/10/2026)
+
+O visor Jev usa contain: exibe todos os pixels, inclusive bordas, com barras
+quando a proporção da câmera difere da tela. O quadro congelado aparece antes
+da resposta; é o mesmo JPEG enviado, não uma foto posterior. A câmera solicita
+1920×1080 como preferência; resoluções reais dependem do dispositivo. O envio
+preserva a proporção, não amplia artificialmente e limita o lado maior a 1536.
+JPEG é tentado em qualidade 0,90, 0,82 e 0,72 para respeitar o limite local de
+1,8 milhão de caracteres. Miniaturas do histórico têm lado maior de 320 pixels.
+
+O prompt inspection-v3-full-frame solicita varrer a imagem inteira, incluindo
+bordas, e recebe as dimensões verificadas no JPEG. Continua sendo uma chamada
+por captura; a imagem maior pode aumentar tokens/custo e latência. Não há
+chamadas automáticas adicionais ou mudança silenciosa dos limiares.
+
+Resultados separados: possível defeito, sem defeito aparente, refazer captura,
+conferir objeto e revisão manual. Sem defeito aparente exige concordância positiva
+de qualidade/objeto/ausência de evidência; permanece verdict=review e nunca
+aprova a peça. Regiões desenhadas provêm do Box validado; o botão Ampliar região
+sugerida usa a foto congelada e as coordenadas retornadas. Uma nova pressão em
+Capturar já inicia a próxima análise, sem uma pressão intermediária para limpar.
+
+Testes verificam todos os pixels de origem, proporções horizontal/vertical,
+resolução 4K reduzida, mapeamento da região no visor, foto congelada antes da
+resposta, mensagens distintas, erro e repetição de captura. A mudança corrige
+perda de contexto/detalhe; não comprova ganho de precisão industrial sem uma
+avaliação comparativa em fotos reais rotuladas.
+
+Smoke test real da rota atualizada: JPEG sintético 1536×864 aceito com HTTP 200,
+prompt inspection-v3-full-frame, outcome=recapture, assessment=uncertain,
+verdict=review, sem caixa. A imagem uniforme não é um conjunto de avaliação: o
+resultado confirma contrato/formato e recusa segura, não desempenho em produtos.

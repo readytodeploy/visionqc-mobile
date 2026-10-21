@@ -84,7 +84,7 @@
         "Outro defeito",
         "Indeterminado"
       ],
-      "notes": "Integração implementada; requer AI_JEV_API_KEY e validação real. Analisa apenas o recorte do visor; nenhuma aprovação automática."
+      "notes": "Integração implementada; requer AI_JEV_API_KEY e validação real. Analisa a imagem inteira da câmera com proporção preservada; nenhuma aprovação automática."
     }
   ]
 }
